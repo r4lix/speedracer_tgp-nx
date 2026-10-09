@@ -1,0 +1,8 @@
+# Bring-your-own-copy: never commit game files, extracted assets or decompiled game code
+local/
+game/
+out/
+*.dcr
+*.flv
+*.zip
+*.exe
