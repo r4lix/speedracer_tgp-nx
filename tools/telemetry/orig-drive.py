@@ -88,10 +88,38 @@ def main():
 
     t0 = time.perf_counter()
     hist = []
-    idx = 1
+    idx = 0
     steer = None
+    throttle = True
     f = open(out, "w")
-    last_log = 0
+
+    def aim(x, y, look):
+        """Point `look` units ahead along the path polyline, starting from the segment nearest to (x, y)."""
+        nonlocal idx
+        best, bi = 1e18, idx
+        for i in range(max(0, idx - 2), min(len(path) - 1, idx + 6)):
+            ax, ay = path[i][0], path[i][1]
+            bx, by = path[i + 1][0], path[i + 1][1]
+            dx, dy = bx - ax, by - ay
+            u = max(0.0, min(1.0, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy)))
+            d = math.hypot(ax + u * dx - x, ay + u * dy - y)
+            if d < best:
+                best, bi, bu = d, i, u
+        idx = bi
+        i, u = bi, bu
+        left = look
+        px = path[i][0] + u * (path[i + 1][0] - path[i][0])
+        py = path[i][1] + u * (path[i + 1][1] - path[i][1])
+        while i < len(path) - 2:
+            seg = math.hypot(path[i + 1][0] - px, path[i + 1][1] - py)
+            if seg >= left:
+                k = left / seg
+                return px + (path[i + 1][0] - px) * k, py + (path[i + 1][1] - py) * k, best
+            left -= seg
+            i += 1
+            px, py = path[i][0], path[i][1]
+        return path[-1][0], path[-1][1], best
+
     while True:
         t = time.perf_counter() - t0
         v = read(addr)
@@ -99,31 +127,33 @@ def main():
             break
         x, y, z = v
         hist.append((t, x, y, z))
-        f.write("%.3f,%.2f,%.2f,%.3f\n" % (t, x, y, z))
-        while idx < len(path) - 1 and (path[idx][1] - y) < 25 and idx < len(path) - 2:
-            idx += 1
-        # heading from the last ~0.2 s
+        f.write("%.3f,%.2f,%.2f,%.3f" % (t, x, y, z) + chr(10))
         ref = next((p for p in reversed(hist) if t - p[0] > 0.15), None)
         if ref and math.hypot(x - ref[1], y - ref[2]) > 0.3:
+            speed = math.hypot(x - ref[1], y - ref[2]) / (t - ref[0])
             psi = math.atan2(x - ref[1], y - ref[2])
-            j = min(idx + 1, len(path) - 1)
-            tx, ty = path[j][0], path[j][1]
+            tx, ty, off = aim(x, y, 14 + speed * 0.3)
             want = math.atan2(tx - x, ty - y)
             err = (want - psi + math.pi) % (2 * math.pi) - math.pi
-            new = "Right" if err > 0.05 else "Left" if err < -0.05 else None
-            key("Up", abs(err) < 0.45)
+            new = "Right" if err > 0.04 else "Left" if err < -0.04 else None
             if new != steer:
                 if steer:
                     key(steer, False)
                 if new:
                     key(new, True)
                 steer = new
+            # keep the speed near 45 u/s: the walls are close and the original reacts fast
+            cap = 52 if y < 1520 else 140  # flat out down the long descent
+            want_throttle = speed < cap and abs(err) < 0.35
+            if want_throttle != throttle:
+                key("Up", want_throttle)
+                throttle = want_throttle
         if t > 4 and len(hist) > 60 and math.hypot(x - hist[-60][1], y - hist[-60][2]) < 4:
             print("stuck at", x, y)
             break
         if y > 2100:
             break
-        time.sleep(0.025)
+        time.sleep(0.02)
     for k in ("Up", "Left", "Right"):
         key(k, False)
     f.close()

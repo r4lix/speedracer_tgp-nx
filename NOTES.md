@@ -115,3 +115,10 @@ Source: `Havok.x32` (573,440 bytes, sha256 `90694ddbad361fbf...`), one of 12 zli
   (33 % -> 0 %) and keeps z(y) within 0.1-0.4 of the original's along the whole stretch. Flat-road ride height is unchanged
   (z 13.8). The 1.0 value in the script may be an unreachable `#maxDistance`, not a measured one; if some place needs the
   shorter ray it can be reverted in `Vehicle::hover`.
+- Long descent (y 1500-1850, z 26 -> -1.7, 11 degrees), original vs port with the 1.2 ray: z(y) agrees within 0.3 along the whole
+  drop (original 1595: 22.0, 1678: 11.2, 1744: 0.7; port 1601: 21.3, 1673: 11.9, 1751: -0.3) and the port keeps four wheels on the
+  road throughout (pitch -3..-10, never airborne). Speed is not comparable yet: the port's autopilot reaches 80-82 u/s at the bottom;
+  the original driver in two runs (steering with key presses, throttle capped at 48 for the first run and uncapped down the
+  descent in the second) stayed at 38-53 u/s, which may be lost to its constant steering corrections or may be a real difference in
+  how speed builds up on a descent. Unresolved; `orig-drive.py` now follows the path polyline with a speed-dependent lookahead and
+  gets through the climb and the descent (to y 2100) reliably.
