@@ -44,7 +44,7 @@ DATA		:=
 INCLUDES	:=	src src/third_party src/third_party/imgui
 ROMFS	:=	romfs
 APP_TITLE	:=	Speed Racer: The Great Plan (revival)
-APP_AUTHOR	:=	speedracer-revival
+APP_AUTHOR	:=	r4lix
 APP_VERSION	:=	0.1.0
 # the game's own icon, from your copy (tools/exeicon.py, run by bake.py)
 ICON		:=	local/icon.jpg
