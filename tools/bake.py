@@ -336,6 +336,12 @@ def copy_main_movie():
         for f in sorted(media.glob("*.flv")):
             (OUT / "media" / f.name).write_bytes(f.read_bytes())
             n += 1
+    # The clip beside PLAY! on the main page is a video stream embedded in the menu movie (XMED-5196).
+    menu_movie = ROOT / "local" / "out" / "main" / "SR_MAIN" / "chunks" / "XMED-5196.bin"
+    if menu_movie.exists():
+        import subprocess
+        subprocess.run([sys.executable, str(ROOT / "tools" / "swfvideo.py"), str(menu_movie), str(OUT / "media" / "menu_preview.flv")], check=True)
+        n += 1
     # The loading card ("THE GREAT PLAN" on a checkerboard): the TITLE_1 Flash movie of the main movie,
     # rendered by tools/swfcapture (movie XMED-5206).
     title = ROOT / "local" / "cutscene" / "frames" / "T5206" / "0001.png"

@@ -48,6 +48,7 @@ std::map<std::string, Sound> g_sounds;
 Mutex g_lock;
 Thread g_thread;
 bool g_running = false, g_ok = false, g_muted = false;
+float g_master = 1.0f;
 
 const Sound* load(const char* name) {
     auto it = g_sounds.find(name);
@@ -175,7 +176,7 @@ void mix(int16_t* out) {
                 break;
             }
     for (int i = 0; i < kFrames; ++i) {
-        float v = g_muted ? 0.0f : acc[i] * 0.6f;
+        float v = g_muted ? 0.0f : acc[i] * 0.6f * g_master;
         int16_t o = (int16_t)(v > 32767 ? 32767 : v < -32768 ? -32768 : v);
         out[i * 2] = out[i * 2 + 1] = o;
     }
@@ -335,6 +336,7 @@ int streamQueued() {
 }
 
 void setMuted(bool m) { g_muted = m; }
+void setMasterVolume(float v) { g_master = v < 0 ? 0 : v > 1 ? 1 : v; }
 bool muted() { return g_muted; }
 
 bool isPlaying(int ch, const char* name) {

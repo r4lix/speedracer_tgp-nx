@@ -18,6 +18,7 @@ public:
     void frame(const Input& in); // one 30 Hz step
     void draw(Renderer& renderer, double seconds);
     void startRace();
+    void goToMainPage();         // from anywhere: stop what is playing and show the main page
     void startIntro();           // the original's opening animation, if media/intro.flv is there
 
     Game game;
@@ -49,6 +50,7 @@ private:
     int sel_ = 0;
     State returnTo_ = State::Main; // where a full-screen video or wallpaper goes back to
     Video video_;
+    Video menuVideo_; // the clip that loops beside PLAY! on the main page (embedded in the original's menu movie)
     std::string videoFile_;
     bool videoFull_ = false, videoLoop_ = false;
     char gadget_ = 0;       // selected button on the About page, 'a'..'g'

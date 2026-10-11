@@ -96,6 +96,13 @@ void Shell::enter(State s) {
     if (s == State::About) gadget_ = 0;
 }
 
+void Shell::goToMainPage() {
+    stopVideo();
+    resultIntro_ = false;
+    fadeBlend_ = 0;
+    enter(State::Main);
+}
+
 void Shell::startIntro() {
     playVideo("intro", true); // returns to the main page when it ends or on A / B
 }
@@ -542,6 +549,11 @@ void Shell::drawHotspots(const char* const* fallbackLabels) {
 
 void Shell::draw(Renderer& renderer, double seconds) {
     if (video_.isOpen()) video_.update(seconds);
+    if (state == State::Main) {
+        // the loop beside PLAY!: 100x80, no sound, 13 s; reopened when it ends
+        if (!menuVideo_.isOpen() || menuVideo_.finished()) menuVideo_.open("file:romfs:/media/menu_preview.flv");
+        if (menuVideo_.isOpen()) menuVideo_.update(seconds);
+    }
     if (state == State::Race) {
         renderer.draw(game);
         if (fadeBlend_ > 0) {
@@ -563,6 +575,11 @@ void Shell::draw(Renderer& renderer, double seconds) {
     case State::Main: {
         const bool cap = ui::hasImage("ref_main");
         drawPage("ref_main");
+        if (menuVideo_.isOpen() && menuVideo_.texture()) { // over the still the capture has there
+            ui::rect(401, 141, 102, 82, glm::vec4(0.5f, 0.07f, 0.1f, 1));
+            ui::texture(menuVideo_.texture(), 402, 142, 100, 80);
+            ui::rect(402, 142, 100, 80, glm::vec4(0.62f, 0.06f, 0.1f, 0.42f)); // the movie lays a red wash over it
+        }
         ui::rect(346, 338, 160, 21, kRed); // PRINT CONTROLS has no use here: the slot becomes QUIT
         ui::text(">>  QUIT", 356, 342, 12, kWhite);
         static const char* labels[] = {"PLAY!", "VIDEO CLIPS", "WALLPAPER", "MINIGAMES", ">> ABOUT THE MACH 5", ">> HOW TO PLAY", nullptr};

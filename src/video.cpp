@@ -58,12 +58,13 @@ bool Video::open(const char* path) {
     clock_ = 0;
     shownPts_ = -1;
     finished_ = false;
-    audio::streamReset(audio_ ? audio_->sample_rate : 22050);
+    if (audio_) audio::streamReset(audio_->sample_rate); // silent clips leave the sound stream to whoever uses it
     logf("video %s: %dx%d%s", path, width_, height_, audio_ ? " with sound" : "");
     return true;
 }
 
 void Video::close() {
+    if (audio_) audio::streamReset(22050);
     if (sws_) sws_freeContext(sws_);
     sws_ = nullptr;
     if (frame_) av_frame_free(&frame_);
@@ -76,7 +77,6 @@ void Video::close() {
     free(rgba_);
     rgba_ = nullptr;
     videoStream_ = audioStream_ = -1;
-    audio::streamReset(22050);
 }
 
 bool Video::decodeNext() {

@@ -23,6 +23,7 @@ void streamReset(int rate);
 void streamPush(const short* samples, int count);
 int streamQueued(); // samples not played yet
 
+void setMasterVolume(float v); // 0..1, on top of everything
 void setMuted(bool muted); // everything, as the original menu's mute button
 bool muted();
 

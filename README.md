@@ -39,6 +39,7 @@ screen. Best score, the bonus wallpaper and solved puzzles are kept in `speedrac
 | Minus | deflector |
 | Left stick click | show/hide the help panel |
 | Plus | back to the main page (quit from the main page) |
+| Right stick click (R3) | settings menu (Dear ImGui): controls, audio, interface, debug; B or R3 closes |
 
 ## Tools
 - `tools/w3d.py` - Shockwave 3D (W3D/IFX) parser and CLOD mesh decoder, exports GLB. Ported from
@@ -52,3 +53,12 @@ screen. Best score, the bonus wallpaper and solved puzzles are kept in `speedrac
 See NOTES.md for findings and the plan.
 
 More debug switches: `speedracer_jackloop` (with autodrive + hold: tap the throttle once, then jacks on every landing).
+
+## Settings menu
+
+R3 opens a Dear ImGui menu over the front end and the race (the game stands still while it is open). Four tabs:
+**Controls** (D-pad and stick steering, dead zone, invert, which buttons accelerate and brake, throttle always on),
+**Audio** (mute, master volume), **Interface** (HUD against the screen edges or the original's centred 4:3 layout,
+the key list, skip the opening animation, frame-rate and car-stats overlays) and **Debug** (no damage, autopilot,
+jacks on every landing, game speed, start at a path point, restart race, per-frame wheel log). Settings are kept in
+`sdmc:/speedracer.cfg`. Dear ImGui 1.91.5 (MIT) lives in `src/third_party/imgui`.

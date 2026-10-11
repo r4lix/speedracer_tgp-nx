@@ -39,9 +39,9 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	speedracer-nx
 BUILD		:=	build
-SOURCES		:=	src src/third_party
+SOURCES		:=	src src/third_party src/third_party/imgui
 DATA		:=
-INCLUDES	:=	src src/third_party
+INCLUDES	:=	src src/third_party src/third_party/imgui
 ROMFS	:=	romfs
 APP_TITLE	:=	Speed Racer: The Great Plan (revival)
 APP_AUTHOR	:=	speedracer-revival

@@ -1,5 +1,6 @@
 ﻿// Draws a Game: the 3D scene (twice when the periscope view is open), then the HUD.
 #include "render.h"
+#include "settings.h"
 
 #include <cmath>
 #include <cstdio>
@@ -23,7 +24,8 @@ const float kHudScale = kScreenH / 384.0f;
 const float kHudLeft = (kScreenW - 512 * kHudScale) * 0.5f;
 // In the race the HUD sat against the stage edges; on the wider screen each element keeps its distance to its
 // own edge, so it moves out by this many stage pixels.
-const float kHudEdge = kHudLeft / kHudScale;
+const float kHudEdgeFull = kHudLeft / kHudScale;
+inline float hudEdge() { return g_cfg.hudAnchored ? kHudEdgeFull : 0.0f; } // menu switch: off = centred 4:3 layout
 
 const char* kVertex = R"(#version 330 core
 layout(location = 0) in vec3 aPos;
@@ -626,10 +628,10 @@ void Renderer::draw(Game& g) {
     drawWorld(g, view, proj, g.eye);
 
     beginHud();
-    if (g.SCOPEMODE != 0) hudQuad("ov_scopecam_under", 347 + kHudEdge, 0, g.scopeUnderBlend);
+    if (g.SCOPEMODE != 0) hudQuad("ov_scopecam_under", 347 + hudEdge(), 0, g.scopeUnderBlend);
     if (g.scopeViewOn) {
         // doCamera: the second camera's rect(362, 12, 499, 115), projectionAngle 60, 2 units above the car
-        const float sx = 362 + kHudEdge, sy = 12, sw = 137, sh = 103;
+        const float sx = 362 + hudEdge(), sy = 12, sw = 137, sh = 103;
         int vx = (int)(kHudLeft + sx * kHudScale), vw = (int)(sw * kHudScale), vh = (int)(sh * kHudScale);
         int vy = kScreenH - (int)(sy * kHudScale) - vh;
         glViewport(vx, vy, vw, vh);
@@ -644,14 +646,14 @@ void Renderer::draw(Game& g) {
         hudQuad("ov_scopecam_static", sx, sy, g.scopeStaticBlend, 0, sw / 256, sw, sh);
         hudQuad("ov_scopecam_frame", sx, sy, 100, 0, sw / 256, sw, sh);
     }
-    for (const Overlay& o : g.overlays()) hudQuad(o.texture, o.x + o.anchor * kHudEdge, o.y, o.blend, o.u0, o.u1, o.width);
+    for (const Overlay& o : g.overlays()) hudQuad(o.texture, o.x + o.anchor * hudEdge(), o.y, o.blend, o.u0, o.u1, o.width);
     setUv();
-    if (g.helpBlend > 0) { // the original panel listed keyboard keys; this one lists the pad
+    if (g.helpBlend > 0 && g_cfg.showHelp) { // the original panel listed keyboard keys; this one lists the pad
         static const char* rows[][2] = {{"A / ZR", "DRIVE"}, {"B / ZL", "BRAKE"}, {"X", "JACKS"}, {"L", "BELT TIRES"},
                                         {"Y", "CUTTER BLADES"}, {"-", "DEFLECTOR"}, {"UP", "ILLUMINATION"},
                                         {"DOWN", "FROGGER MODE"}, {"R", "HOMING ROBOT"}, {"L3", "SHOW/HIDE HELP"}};
         float a = g.helpBlend / 100.0f;
-        const float hx = 8 - kHudEdge, hy = 180; // PREP: ovHelp at point(8, 180), against the left edge
+        const float hx = 8 - hudEdge(), hy = 180; // PREP: ovHelp at point(8, 180), against the left edge
         ui::rect(hx, hy, 150, 14 + 13 * 10, glm::vec4(0, 0, 0.1f, 0.6f * a));
         for (int i = 0; i < 10; ++i) {
             ui::text(rows[i][0], hx + 6, hy + 6 + 13 * i, 10, glm::vec4(1, 0.85f, 0.2f, a));

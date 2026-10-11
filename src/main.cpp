@@ -13,6 +13,8 @@
 #include <glad/glad.h>
 
 #include "audio.h"
+#include "menu.h"
+#include "settings.h"
 #include "render.h"
 #include "shell.h"
 
@@ -197,6 +199,9 @@ int main(int, char**) {
     const bool noIntro = fileExists("sdmc:/speedracer_nointro");        // skip the opening animation
     const bool holdStart = fileExists("sdmc:/speedracer_hold");         // with autodrive: wait on the start line
 
+    loadSettings();
+    audio::setMuted(g_cfg.mute);
+    audio::setMasterVolume(g_cfg.masterVolume);
     static Shell shell;
     Game& game = shell.game;
     if (FILE* f = fopen("sdmc:/speedracer_startpath", "r")) { // a path point number to start the race from
@@ -210,8 +215,15 @@ int main(int, char**) {
     }
     Renderer renderer;
     bool ok = renderer.init() && shell.init();
+    menu::init();
+    if (FILE* mf = fopen("sdmc:/speedracer_menu", "r")) { // debug: open the settings menu on a tab at start
+        int tab = 0;
+        if (fscanf(mf, "%d", &tab) != 1) tab = 0;
+        fclose(mf);
+        menu::showTab(tab);
+    }
     if (ok && autoDrive) shell.startRace();
-    else if (ok && !menuTour && !noIntro) shell.startIntro();
+    else if (ok && !menuTour && !noIntro && !g_cfg.skipIntro) shell.startIntro();
     logf(ok ? "assets loaded, entering main loop" : "STARTUP FAILED, showing a red screen");
 
     const double tickHz = (double)armGetSystemTickFreq();
@@ -226,6 +238,11 @@ int main(int, char**) {
         padUpdate(&pad);
         u64 held = padGetButtons(&pad);
         u64 down = padGetButtonsDown(&pad);
+        {
+            HidAnalogStickState ls = padGetStickPos(&pad, 0);
+            menu::feed(held, ls.x, ls.y, 1.0 / 60);
+        }
+        if (menu::isOpen()) down = 0;
         pressed |= down;
 
         u64 now = armGetSystemTick();
@@ -233,17 +250,23 @@ int main(int, char**) {
         accumulator += elapsed;
         lastTick = now;
         if (accumulator > 0.2) accumulator = 0.2;
+        if (menu::isOpen()) accumulator = 0; // the game stands still behind the menu
+        const double tick = 1.0 / (30.0 * g_cfg.timeScale);
 
         // The original runs its scripts and one Havok step per frame at 30 fps.
-        while (ok && accumulator >= 1.0 / 30.0) {
-            accumulator -= 1.0 / 30.0;
+        while (ok && accumulator >= tick) {
+            accumulator -= tick;
             HidAnalogStickState stick = padGetStickPos(&pad, 0);
             int sy = stick.y > 16000 ? 1 : stick.y < -16000 ? -1 : 0;
             Input in;
-            in.left = (held & HidNpadButton_Left) || stick.x < -12000;
-            in.right = (held & HidNpadButton_Right) || stick.x > 12000;
-            in.forward = held & (HidNpadButton_A | HidNpadButton_ZR);
-            in.backward = held & (HidNpadButton_B | HidNpadButton_ZL);
+            const int dz = (int)(g_cfg.stickDeadzone * 32767);
+            in.left = ((g_cfg.dpadSteer && (held & HidNpadButton_Left)) || (g_cfg.stickSteer && stick.x < -dz));
+            in.right = ((g_cfg.dpadSteer && (held & HidNpadButton_Right)) || (g_cfg.stickSteer && stick.x > dz));
+            if (g_cfg.invertSteer) std::swap(in.left, in.right);
+            in.forward = ((g_cfg.accelA && (held & HidNpadButton_A)) || (g_cfg.accelZR && (held & HidNpadButton_ZR)) ||
+                          g_cfg.autoAccelerate);
+            in.backward = ((g_cfg.brakeB && (held & HidNpadButton_B)) || (g_cfg.brakeZL && (held & HidNpadButton_ZL)));
+            if (in.backward && g_cfg.autoAccelerate) in.forward = false;
             in.jacks = pressed & HidNpadButton_X;
             in.blades = pressed & HidNpadButton_Y;
             in.grip = pressed & HidNpadButton_L;
@@ -265,7 +288,7 @@ int main(int, char**) {
             pressed = 0;
 
             const bool racing = shell.state == Shell::State::Race;
-            if (autoDrive && racing) {
+            if ((autoDrive || g_cfg.autopilot) && racing) {
                 if (holdStart) {
                     in = Input{};
                     if (fileExists("sdmc:/speedracer_jackloop")) { // start the race with one tap, then jump again whenever the car is down
@@ -287,7 +310,8 @@ int main(int, char**) {
                 else autoPilot(game, in);
                 in.confirm = false;
             }
-            if (noDamage) game.gDamage = 0;
+            if (noDamage || g_cfg.noDamage) game.gDamage = 0;
+            if (g_cfg.jackLoop && racing && game.isPlaying) in.jacks = true;
             if (forceResult >= 0 && racing && game.frameCount == 60) {
                 game.outcome = (Game::Outcome)forceResult;
                 if (game.outcome == Game::Outcome::Win) game.gPosition = 1;
@@ -319,7 +343,7 @@ int main(int, char**) {
                     logf("result screen: outcome %d, place %d, score %d, frame %ld", (int)game.outcome, game.gPosition,
                          game.gScore, game.frameCount);
             }
-            if (racing && fileExists("sdmc:/speedracer_hoverlog")) {
+            if (racing && (g_cfg.logHover || fileExists("sdmc:/speedracer_hoverlog"))) {
                 const Vehicle& cv = game.car;
                 glm::mat3 rm = cv.body.rotation();
                 glm::vec3 fwd = rm * glm::vec3(0, 1, 0), rgt = rm * glm::vec3(1, 0, 0);
@@ -344,11 +368,13 @@ int main(int, char**) {
             glClear(GL_COLOR_BUFFER_BIT);
         } else {
             shell.draw(renderer, elapsed);
+            menu::draw(shell, elapsed > 1e-4 ? 1.0 / elapsed : 0.0);
         }
         eglSwapBuffers(s_display, s_surface);
         if (++drawn == 1) logf("first frame presented");
     }
 
+    menu::shutdown();
     logf("exiting after %ld front-end frames", shell.frames);
     audio::shutdown();
     deinitEgl();

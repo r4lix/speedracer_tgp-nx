@@ -143,3 +143,8 @@ Source: `Havok.x32` (573,440 bytes, sha256 `90694ddbad361fbf...`), one of 12 zli
   sphere set is mirrored left-right (the baked fill was 0.12 off centre), and the centre of mass sits under the middle of the
   spheres (y -0.126; the script's -0.076 is for the original's hull). Result: ten consecutive jumps on the spot, max pitch/roll 0,
   position change under 0.3 units in 10 seconds (was 4-5 units with 45 degree tumbles).
+
+- Menu preview (2026-10-11): the loop beside PLAY! on the main page is not one of the `MEDIA/*.flv` files: it is an
+  embedded Sorenson H.263 stream (100x80, 402 frame slots, 322 present, 13.4 s) in the menu movie `XMED-5196`
+  (DefineVideoStream 134, VideoFrame tags in sprite 135). `tools/swfvideo.py` writes it out as an FLV, `bake.py` puts
+  it in `romfs/media/menu_preview.flv`, and the port loops it over the captured page with a red wash like the original's.
