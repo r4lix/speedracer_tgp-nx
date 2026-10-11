@@ -970,7 +970,7 @@ void Game::updateMach5(const Input& in) {
     c.wheelSpin -= forwardVel * c.pWheelSpinCoeff;
     if (c.wheelSpin > 360) c.wheelSpin -= 360;
     else if (c.wheelSpin < -360) c.wheelSpin += 360;
-    c.placeWheels(0.25f); // the script floors the drop at 0.75, which puts a wheel into the road when the car is low
+    c.placeWheels(0.75f); // as the script: the wheels never retract (0.25 hid them in the body just before every landing)
     shadowVisible = powerCoeff == 1;
 }
 

@@ -132,7 +132,7 @@ Source: `Havok.x32` (573,440 bytes, sha256 `90694ddbad361fbf...`), one of 12 zli
   with the wheels in the road (hull bottom 0.156 under the wheel points). A jack jump (`mass * 40`, 22 frames in the air, 4 units
   up) landing hard, especially on a downhill, ended in 40 frames of bouncing at d = 0.15-0.25 with the wheel meshes sunk in the road
   (the script also floors the visual drop at 0.75). Two deliberate deviations: the spring lever is kept at 0.6 below d = 0.6 (no
-  change above, so ride height and hills are untouched), and the wheel meshes use a 0.25 floor instead of 0.75.
+  change above, so ride height and hills are untouched), and (the wheel-mesh floor stays at the script's 0.75: 0.25 hid the wheels in the body for the last frames of every jump and they popped out on landing).
 - Jack jumps drifted (2026-10-11, reported with a side-by-side against the original, where a standing car jumps on the spot):
   logging position, attitude and angular rate every frame (`speedracer_jackloop` + `speedracer_hoverlog` with autodrive and
   hold) on the flat start line showed the car pitching 15 degrees at the first landing and then tumbling in the air. The cause was
