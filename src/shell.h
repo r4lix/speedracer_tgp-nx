@@ -12,7 +12,7 @@
 
 class Shell {
 public:
-    enum class State { Main, Clips, Wallpaper, Mini, About, HowTo, ViewWallpaper, Jigsaw, Slider, Playing, Race, Result };
+    enum class State { Main, Clips, Wallpaper, Mini, About, HowTo, ViewWallpaper, Jigsaw, Slider, Playing, Loading, Race, Result };
 
     bool init();                 // loads the game data and opens the main page
     void frame(const Input& in); // one 30 Hz step
@@ -38,6 +38,7 @@ private:
     void stopVideo();
     void drawPage(const char* capture);
     void drawHotspots(const char* const* fallbackLabels);
+    void drawLoadingCard(float alpha, float progress);
     void loadSave();
     void writeSave();
     // mini-games
@@ -55,6 +56,8 @@ private:
     int wallpaper_ = 0;
     long resultStart_ = 0;  // frame the result screen opened on
     bool resultIntro_ = false; // the result screen's opening cartoon is playing
+    long loadStart_ = 0;       // frame the loading card came up on
+    float fadeBlend_ = 0;      // the loading card fading out over the first seconds of the race, 0..100
     // saved between runs (sdmc:/speedracer.sav)
     int bestScore_ = 0, solved_ = 0;
     bool bonusWallpaper_ = false, newUnlock_ = false;

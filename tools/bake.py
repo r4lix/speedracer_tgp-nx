@@ -336,6 +336,12 @@ def copy_main_movie():
         for f in sorted(media.glob("*.flv")):
             (OUT / "media" / f.name).write_bytes(f.read_bytes())
             n += 1
+    # The loading card ("THE GREAT PLAN" on a checkerboard): the TITLE_1 Flash movie of the main movie,
+    # rendered by tools/swfcapture (movie XMED-5206).
+    title = ROOT / "local" / "cutscene" / "frames" / "T5206" / "0001.png"
+    if title.exists():
+        (OUT / "ui" / "title_card.png").write_bytes(title.read_bytes())
+        n += 1
     # The result screens' opening cartoons and the pages' music loop (tools/cutscene.py).
     cut = ROOT / "local" / "cutscene" / "out"
     for f in sorted(cut.glob("*.flv")):

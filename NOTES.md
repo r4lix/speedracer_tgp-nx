@@ -89,3 +89,22 @@ Source: `Havok.x32` (573,440 bytes, sha256 `90694ddbad361fbf...`), one of 12 zli
 - `tools/ifx_bitstream.py` and `tools/w3d.py` are derived from dirplayer-rs, so they are GPL-3.0-or-later. Publishing them means the repo (or at least those tools) ships under GPL-3.0; a C++ runtime that only loads the converted GLB is not affected.
 
 - Startup intro: the projector exe holds its own small Director movie (an XFIR at offset 1671299 inside the data after the PJ01 header at 0x288159, 209 KB; `ProjectorRays decompile --dump-chunks` works on it) whose only real content is `XMED-4412`, a 705-frame Flash movie at 30 fps with events for the engine loop (frame 53 to 300), a gear sound, a voice and the theme (frame 301, 73 % volume), ending on `gotoLoad()` and the SPEED RACER card over a wheel. Rendered through Ruffle as for the result cartoons; `tools/introvideo.py` mixes it. The card is also what `bake.py` crops (wheel hub centred at 268,208 of the 512x384 stage) for the Switch icon, `local/ref/intro_card.png` (a screenshot of the original running).
+
+## Hills, measured (2026-10-11)
+
+- Telemetry from the original: `tools/telemetry/floatscan.py` finds the car's (x, y, z) in the running game (three floats that
+  start at the grid position (42.0, 38.8, 13.8-14.0)) and reads it at 20-30 Hz; `orig-drive.py` presses Left/Right/Up on the
+  real keyboard to follow the level's path points while sampling (run it from a normal PowerShell so the mouse click and key
+  events reach the game; from other shells they were dropped). The memory holds many stale copies, so it picks the address whose
+  y grows once the throttle is down and keeps growing 0.4 s later.
+- Original on flat road: z stays at 13.82 (+-0.02) at any speed, the car never bobs. Speed from rest: about 50 u/s after 1.3 s,
+  55-65 u/s cruising on the plateau, up to 75 u/s on the first descent (y 740-890, z 13.8 -> -4.5). Climb at y 1110-1310
+  (z -4 -> 26, up to 14 degrees): speed falls from 63 to 37-50 and recovers on the flat top. z(y) tracks the road closely.
+- Port on the same stretch (autopilot from path point 13): same z(y) within about 0.5 units, same speeds (60 -> 48-53 on the climb,
+  63-70 on the descent). Differences found: (1) the sphere collider touches the track at the foot of the first steep climb (impact
+  speed 12 u/s at y 1128, `trk` in the log) and the car is thrown 5 units up; the original shows no such jump, its z rises smoothly;
+  (2) with only some wheels in range the port drifts through 0.25-0.75 "power coefficient" on slopes, in the original z is smooth
+  to 0.06 per half second; (3) standing still on a slope the port settles into a 17-frame hover bounce (d 0.84 <-> 1.0, the ray's
+  limit) instead of coming to rest, where on flat ground it settles within 60 frames.
+- Debug switches added for this: `speedracer_throttle` (autodrive: hold the throttle, no steering), `speedracer_hoverlog` (one line per
+  frame with z, vz and each wheel's hover distance), `speedracer_nointro`, `speedracer_result`.

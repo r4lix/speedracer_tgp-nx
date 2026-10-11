@@ -38,7 +38,7 @@ screen. Best score, the bonus wallpaper and solved puzzles are kept in `speedrac
 | D-pad down | frogger mode (periscope and canopy) |
 | Minus | deflector |
 | Left stick click | show/hide the help panel |
-| Plus | quit |
+| Plus | back to the main page (quit from the main page) |
 
 The front end follows the original main movie: the RACE!, VIDEO CLIPS, WALLPAPER and MINIGAMES tabs,
 ABOUT THE MACH 5 (the seven steering-wheel buttons, a turning 3D car and each gadget's demo video) and
@@ -79,6 +79,7 @@ Debug aids, as empty files on the SD card root: `speedracer_autodrive` (the car 
 points by itself), `speedracer_nodamage`, `speedracer_gadgets` (fires each gadget on a schedule), `speedracer_menudemo` (walks through the menus),
 `speedracer_hold` (with autodrive: wait on the start line, for comparing against the original),
 `speedracer_nointro` (skip the opening animation),
+`speedracer_throttle` (with autodrive: hold the throttle, no steering), `speedracer_hoverlog` (per-frame hover numbers),
 `speedracer_result` containing 1, 2 or 3 (with autodrive: end the race after two seconds as won, lost or wrecked),
 and `speedracer_startpath` containing a path point number (1..209) to start from.
 The game writes `speedracer.log` there.

@@ -100,11 +100,13 @@ void Shell::startIntro() {
     playVideo("intro", true); // returns to the main page when it ends or on A / B
 }
 
+// PLAY shows the original's loading card ("THE GREAT PLAN" over a checkerboard, a "preparing level..." bar) for
+// a moment while the race is set up, then fades it out over the race (the level's TITLE overlay, blend -5 a frame).
 void Shell::startRace() {
     stopVideo();
     resultIntro_ = false;
-    game.start();
-    enter(State::Race);
+    loadStart_ = frames;
+    enter(State::Loading);
 }
 
 // ---------------------------------------------------------------- video
@@ -385,6 +387,17 @@ void Shell::frame(const Input& in) {
     ++frames;
     spin_ -= 2; // doSpinner: 2 degrees per frame
     if (state != State::Race && in.deflector) audio::setMuted(!audio::muted()); // Minus: mute
+    if (in.menu) { // +: one step back, and out of the program from the main page
+        if (state == State::Main && !video_.isOpen()) {
+            quit = true;
+        } else {
+            stopVideo();
+            resultIntro_ = false;
+            fadeBlend_ = 0;
+            enter(State::Main);
+        }
+        return;
+    }
     switch (state) {
     case State::Main:
     case State::Clips:
@@ -430,7 +443,17 @@ void Shell::frame(const Input& in) {
             sel_ = keep;
         }
         break;
+    case State::Loading: {
+        const long t = frames - loadStart_;
+        if (t == 3) game.start(); // the card is on screen by now
+        if (t >= 75) {
+            enter(State::Race);
+            fadeBlend_ = 100;
+        }
+        break;
+    }
     case State::Race:
+        if (fadeBlend_ > 0) fadeBlend_ = std::max(0.0f, fadeBlend_ - 5);
         game.frame(in);
         if (game.screen == Game::Screen::Result) {
             enter(State::Result);
@@ -490,6 +513,23 @@ void Shell::drawPage(const char* capture) {
     ui::text(audio::muted() ? "SOUND OFF  ( - )" : "SOUND ON  ( - )", 504, 18, 9, kWhite, 2);
 }
 
+void Shell::drawLoadingCard(float alpha, float progress) {
+    const float l = ui::left(), r = ui::right();
+    if (ui::hasImage("title_card")) {
+        // the card is 4:3; on the wider screen it covers the width and loses a strip at the top and bottom
+        const float w = r - l, h = w * 0.75f;
+        ui::image("title_card", l, (384 - h) * 0.5f, w, h, alpha);
+    } else {
+        ui::rect(l, 0, r - l, 384, glm::vec4(0.98f, 0.78f, 0.08f, alpha));
+        ui::text("THE GREAT PLAN", 256, 168, 36, glm::vec4(1, 1, 1, alpha), 1);
+    }
+    if (progress < 1 || alpha >= 1) {
+        ui::rect(l, 379, r - l, 5, glm::vec4(0, 0, 0, alpha));
+        ui::rect(l, 379, (r - l) * progress, 5, glm::vec4(1, 1, 1, alpha));
+        ui::text("preparing level...", l + 3, 366, 9, glm::vec4(1, 1, 1, alpha));
+    }
+}
+
 void Shell::drawHotspots(const char* const* fallbackLabels) {
     const std::vector<Hotspot>& hs = hotspots();
     for (int i = 0; i < (int)hs.size(); ++i) {
@@ -504,6 +544,11 @@ void Shell::draw(Renderer& renderer, double seconds) {
     if (video_.isOpen()) video_.update(seconds);
     if (state == State::Race) {
         renderer.draw(game);
+        if (fadeBlend_ > 0) {
+            glViewport(0, 0, 1280, 720);
+            ui::begin();
+            drawLoadingCard(fadeBlend_ / 100.0f, 1);
+        }
         return;
     }
     glViewport(0, 0, 1280, 720);
@@ -512,6 +557,9 @@ void Shell::draw(Renderer& renderer, double seconds) {
     ui::begin();
     static const char* tabLabels[] = {"RACE!", "VIDEO CLIPS", "WALLPAPER", "MINIGAMES"};
     switch (state) {
+    case State::Loading:
+        drawLoadingCard(1, std::min(1.0f, (frames - loadStart_) / 72.0f));
+        break;
     case State::Main: {
         const bool cap = ui::hasImage("ref_main");
         drawPage("ref_main");

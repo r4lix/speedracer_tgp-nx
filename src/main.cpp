@@ -223,7 +223,6 @@ int main(int, char**) {
         padUpdate(&pad);
         u64 held = padGetButtons(&pad);
         u64 down = padGetButtonsDown(&pad);
-        if (down & HidNpadButton_Plus) break;
         pressed |= down;
 
         u64 now = armGetSystemTick();
@@ -252,6 +251,7 @@ int main(int, char**) {
             in.help = pressed & HidNpadButton_StickL;
             in.confirm = pressed & HidNpadButton_A;
             in.cancel = pressed & HidNpadButton_B;
+            in.menu = pressed & HidNpadButton_Plus;
             in.up = (pressed & HidNpadButton_Up) || (sy == 1 && stickY != 1);
             in.down = (pressed & HidNpadButton_Down) || (sy == -1 && stickY != -1);
             int sx = stick.x > 16000 ? 1 : stick.x < -16000 ? -1 : 0;
@@ -264,6 +264,7 @@ int main(int, char**) {
             const bool racing = shell.state == Shell::State::Race;
             if (autoDrive && racing) {
                 if (holdStart) in = Input{};
+                else if (fileExists("sdmc:/speedracer_throttle")) { in = Input{}; in.forward = true; } // straight ahead, flat out
                 else autoPilot(game, in);
                 in.confirm = false;
             }
@@ -299,11 +300,18 @@ int main(int, char**) {
                     logf("result screen: outcome %d, place %d, score %d, frame %ld", (int)game.outcome, game.gPosition,
                          game.gScore, game.frameCount);
             }
+            if (autoDrive && racing && fileExists("sdmc:/speedracer_hoverlog")) {
+                const Vehicle& cv = game.car;
+                logf("hov %ld z %.3f vz %.2f d %.3f %.3f %.3f %.3f hit %d%d%d%d", game.frameCount, cv.body.origin().z, cv.body.v.z,
+                     cv.hoverDist[0], cv.hoverDist[1], cv.hoverDist[2], cv.hoverDist[3], cv.isHovering[0], cv.isHovering[1],
+                     cv.isHovering[2], cv.isHovering[3]);
+            }
             if (autoDrive && racing && game.frameCount % (game.debugStartPath ? 6 : 60) == 0) {
                 glm::vec3 p = game.car.body.origin();
-                logf("frame %ld pos %.0f %.0f %.1f speed %.0f surface %d damage %.0f place %d score %d left %d",
+                glm::vec3 rd = game.car.rotationDeg();
+                logf("frame %ld pos %.0f %.0f %.1f speed %.0f surface %d damage %.0f place %d score %d left %d pitch %.0f roll %.0f hover %.2f vz %.1f trk %.1f",
                      game.frameCount, p.x, p.y, p.z, game.car.forwardVel, game.trackFace, game.gDamage, game.gPosition,
-                     game.gScore, game.enemiesRemaining);
+                     game.gScore, game.enemiesRemaining, rd.x, rd.y, game.car.powerCoeff, game.car.body.v.z, game.car.worldHit.trackSpeed);
             }
         }
 

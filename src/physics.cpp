@@ -107,6 +107,7 @@ void RigidBody::substep(float h, const glm::vec3& gravity, const CollisionWorld&
         glm::vec3 rc = cp - x;
         float vn = glm::dot(v + glm::cross(w, rc), n);
         if (vn >= 0) return;
+        if (hit && kind == 0 && -vn > hit->trackSpeed) hit->trackSpeed = -vn;
         if (hit && kind != 0 && -vn > hit->speed) {
             hit->kind = kind;
             hit->owner = owner;

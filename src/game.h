@@ -13,7 +13,7 @@ struct Input {
     // pressed this frame
     bool jacks = false, grip = false, blades = false, deflector = false, lights = false, frogger = false,
          robot = false, help = false, confirm = false, cancel = false, up = false, down = false,
-         leftPressed = false, rightPressed = false;
+         leftPressed = false, rightPressed = false, menu = false; // menu: the + button
 };
 
 // What the two car scripts share: the chassis body, four hover points and the wheel/shadow placement.

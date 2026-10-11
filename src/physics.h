@@ -68,6 +68,7 @@ struct Contact {
     int kind = -1;  // Triangle::kind
     int owner = -1;
     float speed = 0;
+    float trackSpeed = 0; // hardest impact against the track surface itself (diagnostics)
     glm::vec3 normal{0};
 };
 
