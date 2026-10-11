@@ -182,6 +182,7 @@ int main(int, char**) {
     padConfigureInput(1, HidNpadStyleSet_NpadStandard);
     PadState pad;
     padInitializeDefault(&pad);
+    hidInitializeTouchScreen();
 
     if (!initEgl(nwindowGetDefault())) {
         logf("EGL init failed");

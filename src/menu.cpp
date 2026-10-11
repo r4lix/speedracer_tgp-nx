@@ -1,5 +1,6 @@
 #include "menu.h"
 
+#include <cfloat>
 #include <cmath>
 #include <cstdio>
 
@@ -17,6 +18,7 @@ namespace {
 bool g_open = false;
 bool g_ready = false;
 uint64_t g_prevHeld = 0;
+bool g_touching = false;
 int g_forceTab = -1;
 
 void padKey(ImGuiIO& io, ImGuiKey key, uint64_t held, uint64_t bit) { io.AddKeyEvent(key, (held & bit) != 0); }
@@ -33,8 +35,11 @@ void style() {
     s.WindowRounding = 6;
     s.FrameRounding = 4;
     s.TabRounding = 4;
-    s.ItemSpacing = ImVec2(10, 9);
-    s.FramePadding = ImVec2(10, 6);
+    s.ItemSpacing = ImVec2(10, 8);
+    s.FramePadding = ImVec2(10, 8);    // finger-sized
+    s.GrabMinSize = 34;
+    s.ScrollbarSize = 26;
+    s.TouchExtraPadding = ImVec2(6, 6);
     s.Colors[ImGuiCol_Header] = ImVec4(0.62f, 0.07f, 0.09f, 0.75f);
     s.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.8f, 0.1f, 0.12f, 0.9f);
     s.Colors[ImGuiCol_HeaderActive] = ImVec4(0.9f, 0.15f, 0.15f, 1);
@@ -66,9 +71,7 @@ void controls() {
     ImGui::Checkbox("ZL brakes", &g_cfg.brakeZL);
     ImGui::Checkbox("Throttle always on", &g_cfg.autoAccelerate);
     tip("The car accelerates without a button. Braking still works.");
-    ImGui::SeparatorText("Gadgets");
-    ImGui::TextDisabled("X jacks   Y blades   L grip tyres   R robot");
-    ImGui::TextDisabled("Up lights   Down frogger   - deflector   L3 help");
+    ImGui::TextDisabled("Gadgets: X jacks  Y blades  L grip  R robot  Up lights  Down frogger  - deflector  L3 help");
 }
 
 void audioTab() {
@@ -148,7 +151,7 @@ void init() {
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.BackendFlags |= ImGuiBackendFlags_HasGamepad;
     io.DisplaySize = ImVec2(1280, 720);
-    io.FontGlobalScale = 1.55f;
+    io.FontGlobalScale = 1.4f;
     style();
     g_ready = ImGui_ImplOpenGL3_Init("#version 330 core");
     logf("menu: Dear ImGui %s, backend %s", ImGui::GetVersion(), g_ready ? "ready" : "FAILED");
@@ -190,6 +193,22 @@ void feed(uint64_t held, int lx, int ly, double dt) {
     padKey(io, ImGuiKey_GamepadR1, held, HidNpadButton_R);
     analog(io, ImGuiKey_GamepadLStickLeft, ImGuiKey_GamepadLStickRight, lx);
     analog(io, ImGuiKey_GamepadLStickUp, ImGuiKey_GamepadLStickDown, -ly);
+    // The touch screen is the mouse: a finger down is the left button held at that spot, up releases it and
+    // moves the pointer away so nothing stays highlighted.
+    {
+        HidTouchScreenState ts = {};
+        hidGetTouchScreenStates(&ts, 1);
+        io.AddMouseSourceEvent(ImGuiMouseSource_TouchScreen);
+        if (ts.count > 0) {
+            io.AddMousePosEvent((float)ts.touches[0].x, (float)ts.touches[0].y);
+            io.AddMouseButtonEvent(0, true);
+            g_touching = true;
+        } else if (g_touching) {
+            io.AddMouseButtonEvent(0, false);
+            io.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
+            g_touching = false;
+        }
+    }
     // R3 opens and closes; B closes unless a popup has it
     uint64_t pressed = held & ~g_prevHeld;
     g_prevHeld = held;
@@ -203,8 +222,21 @@ void draw(Shell& shell, double fps) {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui::NewFrame();
     overlays(shell, fps);
+    if (!g_open && shell.state != Shell::State::Race) {
+        // a way in for touch play: a small button in the corner, outside the 4:3 page
+        ImGui::SetNextWindowPos(ImVec2(1280 - 8, 8), ImGuiCond_Always, ImVec2(1, 0));
+        ImGui::SetNextWindowBgAlpha(0.0f);
+        ImGuiWindowFlags bf = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+                              ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBackground;
+        if (ImGui::Begin("##opener", nullptr, bf)) {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.45f, 0.05f, 0.07f, 0.8f));
+            if (ImGui::Button("Settings")) setOpen(true);
+            ImGui::PopStyleColor();
+        }
+        ImGui::End();
+    }
     if (g_open) {
-        ImGui::SetNextWindowSize(ImVec2(820, 560), ImGuiCond_Appearing);
+        ImGui::SetNextWindowSize(ImVec2(900, 640), ImGuiCond_Appearing);
         ImGui::SetNextWindowPos(ImVec2(640, 360), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
         bool open = true;
         if (ImGui::Begin("Speed Racer - settings   (R3 or B closes)", &open, ImGuiWindowFlags_NoCollapse)) {
@@ -229,6 +261,8 @@ void draw(Shell& shell, double fps) {
                 ImGui::EndTabBar();
                 g_forceTab = -1;
             }
+            ImGui::Separator();
+            if (ImGui::Button("Close", ImVec2(220, 0))) setOpen(false);
         }
         ImGui::End();
         if (!open) setOpen(false);

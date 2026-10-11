@@ -61,4 +61,5 @@ R3 opens a Dear ImGui menu over the front end and the race (the game stands stil
 **Audio** (mute, master volume), **Interface** (HUD against the screen edges or the original's centred 4:3 layout,
 the key list, skip the opening animation, frame-rate and car-stats overlays) and **Debug** (no damage, autopilot,
 jacks on every landing, game speed, start at a path point, restart race, per-frame wheel log). Settings are kept in
-`sdmc:/speedracer.cfg`. Dear ImGui 1.91.5 (MIT) lives in `src/third_party/imgui`.
+`sdmc:/speedracer.cfg`. The touch screen works too: a **Settings** button sits in the top-right corner of the front end,
+every control is finger-sized and a **Close** button ends the menu. Dear ImGui 1.91.5 (MIT) lives in `src/third_party/imgui`.
