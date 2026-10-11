@@ -6,3 +6,11 @@ out/
 *.flv
 *.zip
 *.exe
+__pycache__/
+
+# Switch build output and baked assets (made from your own copy by tools/bake.py)
+build/
+romfs/
+*.nro
+*.elf
+*.nacp

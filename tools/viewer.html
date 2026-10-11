@@ -1,0 +1,41 @@
+<!doctype html>
+<!-- Quick GLB viewer for exported scenes. Serve the repo root (python -m http.server) and open
+     tools/viewer.html?glb=local/assets/level1/w3d-7587.glb -->
+<meta charset="utf-8">
+<title>W3D viewer</title>
+<style>html,body{margin:0;height:100%;background:#223}#info{position:fixed;left:8px;top:8px;color:#fff;font:12px monospace}</style>
+<div id="info">loading</div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+
+const q = new URLSearchParams(location.search);
+const renderer = new THREE.WebGLRenderer({antialias: true, preserveDrawingBuffer: true});
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.add(new THREE.HemisphereLight(0xffffff, 0x888888, 3));
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 1, 100000);
+camera.up.set(0, 0, 1);  // Director scenes exported from 3ds Max are Z-up
+const controls = new OrbitControls(camera, renderer.domElement);
+
+// eye/target as "x,y,z" in the URL, or window.setView from the console
+window.setView = (eye, target) => { camera.position.set(...eye); controls.target.set(...target); controls.update(); };
+
+new GLTFLoader().load('../' + (q.get('glb') || 'local/assets/level1/w3d-7587.glb'), gltf => {
+  const hide = new RegExp(q.get('hide') || '^(INV|path|Sphere)');
+  gltf.scene.traverse(o => { if (hide.test(o.name)) o.visible = false; });
+  scene.add(gltf.scene);
+  const box = new THREE.Box3().setFromObject(gltf.scene), c = box.getCenter(new THREE.Vector3()), s = box.getSize(new THREE.Vector3());
+  const num = k => q.get(k).split(',').map(Number);
+  if (q.get('eye')) setView(num('eye'), num('target'));
+  else setView([c.x, c.y, c.z + Math.max(s.x, s.y) * 1.1], [c.x, c.y + 1, c.z]);
+  document.getElementById('info').textContent = `min ${box.min.toArray().map(Math.round)} max ${box.max.toArray().map(Math.round)}`;
+  window.loaded = true;
+}, undefined, e => document.getElementById('info').textContent = 'error: ' + e);
+
+addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); });
+renderer.setAnimationLoop(() => renderer.render(scene, camera));
+</script>

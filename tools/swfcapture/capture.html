@@ -1,0 +1,77 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SWF frame capture</title>
+<body style="margin:0;background:#222;color:#ccc;font:12px sans-serif">
+<div id="status">loading</div>
+<div id="holder"></div>
+<script>
+// Renders a Flash movie with Ruffle one frame at a time and posts every frame to the local server.
+// ?swf=<name>&n=<frames>&fps=<movie frame rate>&w=&h=
+// Ruffle advances on requestAnimationFrame timestamps, so the page owns that clock: each step hands Ruffle
+// exactly one movie frame of time, then reads the canvas back before anything else can draw.
+const q = new URLSearchParams(location.search);
+const swf = q.get("swf"), total = +q.get("n") || 10, fps = +q.get("fps") || 30;
+const W = +q.get("w") || 960, H = +q.get("h") || 720;
+const from = +q.get("from") || 1, every = +q.get("every") || 1; // only post frames from `from` on, every `every`-th
+// No audio device: with one, Ruffle follows a streaming sound's real-time position and skips movie frames
+// to catch up with it, which breaks stepping.
+window.AudioContext = undefined;
+window.webkitAudioContext = undefined;
+const pending = [];
+let nextId = 1, clock = 1000;
+window.requestAnimationFrame = cb => { pending.push([nextId, cb]); return nextId++; };
+window.cancelAnimationFrame = id => { const i = pending.findIndex(p => p[0] === id); if (i >= 0) pending.splice(i, 1); };
+const canvases = [];
+const getContext = HTMLCanvasElement.prototype.getContext;
+HTMLCanvasElement.prototype.getContext = function (type, opts) {
+  if (!canvases.includes(this)) canvases.push(this);
+  return getContext.call(this, type, Object.assign({}, opts, { preserveDrawingBuffer: true }));
+};
+window.RufflePlayer = window.RufflePlayer || {};
+window.RufflePlayer.config = { autoplay: "on", unmuteOverlay: "hidden", splashScreen: false, letterbox: "off",
+                               contextMenu: "off", preferredRenderer: "webgl", quality: "best", warnOnUnsupportedContent: false };
+window.captureState = { frame: 0, done: false, error: "" };
+const status = t => { document.getElementById("status").textContent = t; };
+function runPending(dt) {
+  clock += dt;
+  const batch = pending.splice(0);
+  for (const [, cb] of batch) cb(clock);
+  return batch.length;
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const yieldNow = () => new Promise(r => { const c = new MessageChannel(); c.port1.onmessage = r; c.port2.postMessage(0); }); // not throttled in a hidden tab
+async function main() {
+  const player = window.RufflePlayer.newest().createPlayer();
+  player.style.width = W + "px";
+  player.style.height = H + "px";
+  player.style.display = "block";
+  document.getElementById("holder").appendChild(player);
+  // load: keep the clock still (tiny steps) until the movie has put up a canvas with a size
+  const loading = (player.ruffle ? player.ruffle() : player).load({ url: "/swf/" + swf + ".swf" });
+  let big = null;
+  for (let i = 0; i < 600 && !big; ++i) {
+    await sleep(50);
+    big = canvases.find(c => c.width >= 100 && c.isConnected !== false && c.width * c.height > 10000 && pending.length > 0);
+  }
+  await loading.catch(e => { window.captureState.error = String(e); });
+  if (!big) { window.captureState.error = "no canvas"; status("no canvas"); return; }
+  await sleep(500);
+  for (let n = 1; n <= total; ++n) {
+    runPending(n === 1 ? 0.01 : 1000.1 / fps);
+    if (n < from || (n - from) % every) { window.captureState.frame = n; await yieldNow(); continue; }
+    const canvas = canvases.filter(c => c.width * c.height > 10000).sort((a, b) => b.width * b.height - a.width * a.height)[0];
+    const blob = await new Promise(r => canvas.toBlob(r, "image/png"));
+    await fetch("/frame/" + swf + "/" + n, { method: "POST", body: blob });
+    window.captureState.frame = n;
+    status(swf + " frame " + n + "/" + total + " canvas " + canvas.width + "x" + canvas.height);
+    await yieldNow();
+  }
+  window.captureState.done = true;
+  status("done");
+}
+const s = document.createElement("script");
+s.src = "https://unpkg.com/@ruffle-rs/ruffle";
+s.onload = () => main().catch(e => { window.captureState.error = String(e); status("error " + e); });
+s.onerror = () => { window.captureState.error = "ruffle did not load"; status("ruffle did not load"); };
+document.head.appendChild(s);
+</script>
