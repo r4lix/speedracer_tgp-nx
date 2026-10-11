@@ -133,3 +133,13 @@ Source: `Havok.x32` (573,440 bytes, sha256 `90694ddbad361fbf...`), one of 12 zli
   up) landing hard, especially on a downhill, ended in 40 frames of bouncing at d = 0.15-0.25 with the wheel meshes sunk in the road
   (the script also floors the visual drop at 0.75). Two deliberate deviations: the spring lever is kept at 0.6 below d = 0.6 (no
   change above, so ride height and hills are untouched), and the wheel meshes use a 0.25 floor instead of 0.75.
+- Jack jumps drifted (2026-10-11, reported with a side-by-side against the original, where a standing car jumps on the spot):
+  logging position, attitude and angular rate every frame (`speedracer_jackloop` + `speedracer_hoverlog` with autodrive and
+  hold) on the flat start line showed the car pitching 15 degrees at the first landing and then tumbling in the air. The cause was
+  the contact solver, not the jack: contacts were resolved one at a time without accumulated impulses, so the first sphere
+  to be solved (the car's rear edge) took the whole impact, spun the body at 10 rad/s and the front spheres, which then moved
+  upward, could never take it back. Fixes: all spheres that touch (with a 0.04 margin) are collected, solved in 12 Gauss-Seidel
+  passes with accumulated impulses (an offline model of the same set of contacts converges to zero spin in 5 passes), the contact
+  sphere set is mirrored left-right (the baked fill was 0.12 off centre), and the centre of mass sits under the middle of the
+  spheres (y -0.126; the script's -0.076 is for the original's hull). Result: ten consecutive jumps on the spot, max pitch/roll 0,
+  position change under 0.3 units in 10 seconds (was 4-5 units with 45 degree tumbles).

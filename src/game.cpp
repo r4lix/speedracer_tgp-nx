@@ -64,7 +64,16 @@ float approach(float cur, float target, float step) {
 
 // ---------------------------------------------------------------- Vehicle
 
-void Vehicle::setup(float mass, const glm::vec3& com, const glm::vec3& inertia, const std::vector<glm::vec4>& collider) {
+void Vehicle::setup(float mass, const glm::vec3& comIn, const glm::vec3& inertia, const std::vector<glm::vec4>& collider) {
+    // The centre of mass goes under the middle of the contact spheres. The original's value (the model's centre,
+    // 0.08 behind the middle of the slab) is fine for its hull, but with these spheres a car landing flat took its
+    // impulse off the centre of mass and pitched or rolled away, so a jack jump drifted across the road.
+    glm::vec3 com = comIn;
+    if (!collider.empty()) {
+        float cy = 0;
+        for (const glm::vec4& sp : collider) cy += sp.y;
+        com.y = cy / (float)collider.size();
+    }
     body = RigidBody();
     body.mass = mass;
     body.invMass = 1.0f / mass;
@@ -1596,6 +1605,14 @@ void Game::frame(const Input& in) {
     // enterFrame: the player's hover impulses. exitFrame: Havok steps, then the car scripts, then the frame script.
     trackFace = car.hover(level, false);
     physicsStep();
+    {   // diagnostics: the car sitting on its hull (every wheel closer than 0.35 for most of a second)?
+        static int lowFrames = 0;
+        bool low = true;
+        for (int i = 0; i < 4; ++i) low = low && car.hoverDist[i] < 0.35f;
+        lowFrames = low && car.isHovering[0] ? lowFrames + 1 : 0;
+        if (lowFrames == 20) logf("frame %ld: STUCK ON THE HULL at %.1f %.1f %.1f (all wheels under 0.35 for 20 frames)", frameCount,
+                                  car.body.origin().x, car.body.origin().y, car.body.origin().z);
+    }
     {   // diagnostics: is the car under a track surface (it went through the road)?
         RayHit up;
         glm::vec3 o = car.body.origin() + glm::vec3(0, 0, 0.3f);

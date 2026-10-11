@@ -103,19 +103,41 @@ void RigidBody::substep(float h, const glm::vec3& gravity, const CollisionWorld&
 
     glm::mat3 r = rotation();
     glm::mat3 iinv = r * invInertiaBody * glm::transpose(r);
+    // Contacts are collected while the spheres are pushed out and their velocities fixed afterwards, a few passes over
+    // all of them: resolved one by one, the first sphere to touch a flat road (the front corner of a car landing flat)
+    // spun the body and the rest could not undo it, so a jump ended with the car on its side and drifting.
+    struct Touch {
+        glm::vec3 cp, n;
+        int kind, owner;
+        float acc = 0; // impulse applied through this contact so far; it may be taken back down to zero, never below
+    };
+    std::vector<Touch> touches;
+    touches.reserve(96);
     auto resolve = [&](const glm::vec3& cp, const glm::vec3& n, int kind, int owner) {
+        touches.push_back({cp, n, kind, owner});
+    };
+    auto applyTouch = [&](Touch& tc) {
+        const glm::vec3 &cp = tc.cp, &n = tc.n;
+        const int kind = tc.kind, owner = tc.owner;
         glm::vec3 rc = cp - x;
         float vn = glm::dot(v + glm::cross(w, rc), n);
-        if (vn >= 0) return;
-        if (hit && kind == 0 && -vn > hit->trackSpeed) hit->trackSpeed = -vn;
-        if (hit && kind != 0 && -vn > hit->speed) {
-            hit->kind = kind;
-            hit->owner = owner;
-            hit->speed = -vn;
-            hit->normal = n;
+        if (vn < 0) {
+            if (hit && kind == 0 && -vn > hit->trackSpeed) hit->trackSpeed = -vn;
+            if (hit && kind != 0 && -vn > hit->speed) {
+                hit->kind = kind;
+                hit->owner = owner;
+                hit->speed = -vn;
+                hit->normal = n;
+            }
         }
+        // Projected Gauss-Seidel with accumulated impulses: a contact that pushed too hard (the first one to be
+        // solved, at the car's rear corner) is eased back by the next passes instead of being left as it was.
         float k = invMass + glm::dot(glm::cross(iinv * glm::cross(rc, n), rc), n);
-        glm::vec3 j = n * (-vn / k);
+        float next = std::max(0.0f, tc.acc - vn / k);
+        float dj = next - tc.acc;
+        if (dj == 0) return;
+        tc.acc = next;
+        glm::vec3 j = n * dj;
         v += j * invMass;
         w += iinv * glm::cross(rc, j);
     };
@@ -151,6 +173,28 @@ void RigidBody::substep(float h, const glm::vec3& gravity, const CollisionWorld&
         });
         x += push;
     }
+    // Everything that rests on the surface now counts as a contact, also the spheres the first push already lifted clear
+    // (a car landing flat touches with all of its underside at once; pushing it out at the first sphere left only that
+    // one in the list, and its corner took the whole impulse).
+    {
+        r = rotation();
+        const float kMargin = 0.04f;
+        for (const glm::vec4& sp : spheres) {
+            glm::vec3 c = x + r * (glm::vec3(sp) - comLocal);
+            world.forEachNear(c, sp.w + kMargin, [&](const Triangle& t) {
+                if (ignoreTrees && t.kind == 2) return;
+                glm::vec3 cp = closestPointOnTriangle(c, t);
+                glm::vec3 d = c - cp;
+                float d2 = glm::dot(d, d), lim = sp.w + kMargin;
+                if (d2 >= lim * lim || d2 < 1e-12f) return;
+                touches.push_back({cp, d / glm::sqrt(d2), t.kind, t.owner});
+            });
+        }
+    }
+    // velocities: iterate so that no contact is left closing (a body landing flat gets an even impulse, not a spin)
+    iinv = rotation() * invInertiaBody * glm::transpose(rotation());
+    for (int pass = 0; pass < 12; ++pass)
+        for (Touch& tc : touches) applyTouch(tc);
 }
 
 float collideBodies(RigidBody& a, const std::vector<glm::vec4>& sa, RigidBody& b, const std::vector<glm::vec4>& sb,

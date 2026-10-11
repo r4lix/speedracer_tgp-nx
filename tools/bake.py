@@ -456,6 +456,16 @@ def bake_collider(src, dst):
                 spheres.append((x, y, zc, r))
             y += grid
         x += grid
+    # the car is left-right symmetric but the fill above is not (an inner grid row sat 0.12 off centre, which made a
+    # car landing flat take its impulse on one side and roll): keep each sphere and its mirror image
+    seen, sym = set(), []
+    for sx, sy, sz, sr in spheres:
+        for mx in (sx, -sx):
+            key = (round(mx, 2), round(sy, 2))
+            if key not in seen:
+                seen.add(key)
+                sym.append((mx, sy, sz, sr))
+    spheres = sym
     with open(dst, "wb") as f:
         f.write(struct.pack("<I", len(spheres)))
         for s in spheres:

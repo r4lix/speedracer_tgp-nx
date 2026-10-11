@@ -266,7 +266,13 @@ int main(int, char**) {
 
             const bool racing = shell.state == Shell::State::Race;
             if (autoDrive && racing) {
-                if (holdStart) in = Input{};
+                if (holdStart) {
+                    in = Input{};
+                    if (fileExists("sdmc:/speedracer_jackloop")) { // start the race with one tap, then jump again whenever the car is down
+                        in.forward = game.frameCount > 90 && game.frameCount < 94;
+                        in.jacks = game.frameCount > 100;
+                    }
+                }
                 else if (fileExists("sdmc:/speedracer_throttle")) { in = Input{}; in.forward = true; } // straight ahead, flat out
                 else if (fileExists("sdmc:/speedracer_straight")) {
                     // steer along the path at 50 u/s up to y 1500 (the top of the long descent), then hands off, throttle down
@@ -313,11 +319,15 @@ int main(int, char**) {
                     logf("result screen: outcome %d, place %d, score %d, frame %ld", (int)game.outcome, game.gPosition,
                          game.gScore, game.frameCount);
             }
-            if (autoDrive && racing && fileExists("sdmc:/speedracer_hoverlog")) {
+            if (racing && fileExists("sdmc:/speedracer_hoverlog")) {
                 const Vehicle& cv = game.car;
-                logf("hov %ld z %.3f vz %.2f d %.3f %.3f %.3f %.3f hit %d%d%d%d", game.frameCount, cv.body.origin().z, cv.body.v.z,
-                     cv.hoverDist[0], cv.hoverDist[1], cv.hoverDist[2], cv.hoverDist[3], cv.isHovering[0], cv.isHovering[1],
-                     cv.isHovering[2], cv.isHovering[3]);
+                glm::mat3 rm = cv.body.rotation();
+                glm::vec3 fwd = rm * glm::vec3(0, 1, 0), rgt = rm * glm::vec3(1, 0, 0);
+                logf("hov %ld z %.3f vz %.2f d %.3f %.3f %.3f %.3f hit %d%d%d%d x %.1f y %.1f yaw %.1f fv %.1f lat %.1f wz %.2f pc %.2f rx %.1f ry %.1f wx %.2f wy %.2f",
+                     game.frameCount, cv.body.origin().z, cv.body.v.z, cv.hoverDist[0], cv.hoverDist[1], cv.hoverDist[2],
+                     cv.hoverDist[3], cv.isHovering[0], cv.isHovering[1], cv.isHovering[2], cv.isHovering[3], cv.body.origin().x,
+                     cv.body.origin().y, cv.rotationDeg().z, glm::dot(cv.body.v, fwd), glm::dot(cv.body.v, rgt), cv.body.w.z,
+                     cv.powerCoeff, cv.rotationDeg().x, cv.rotationDeg().y, cv.body.w.x, cv.body.w.y);
             }
             if (autoDrive && racing && game.frameCount % (game.debugStartPath ? 6 : 60) == 0) {
                 glm::vec3 p = game.car.body.origin();

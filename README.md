@@ -50,3 +50,5 @@ screen. Best score, the bonus wallpaper and solved puzzles are kept in `speedrac
 - `tools/swfdump.py` - lists the tags of the Flash movies inside a Director movie and extracts their bitmaps.
 
 See NOTES.md for findings and the plan.
+
+More debug switches: `speedracer_jackloop` (with autodrive + hold: tap the throttle once, then jacks on every landing).
