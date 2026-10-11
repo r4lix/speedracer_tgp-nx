@@ -14,6 +14,8 @@ struct Input {
     bool jacks = false, grip = false, blades = false, deflector = false, lights = false, frogger = false,
          robot = false, help = false, confirm = false, cancel = false, up = false, down = false,
          leftPressed = false, rightPressed = false, menu = false; // menu: the + button
+    bool tap = false;           // a finger touched the screen this frame, at tapX/tapY in stage coordinates (512x384)
+    float tapX = 0, tapY = 0;
 };
 
 // What the two car scripts share: the chassis body, four hover points and the wheel/shadow placement.

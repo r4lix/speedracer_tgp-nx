@@ -353,6 +353,7 @@ def copy_main_movie():
     for f in sorted(cut.glob("*.flv")):
         (OUT / "media" / f.name).write_bytes(f.read_bytes())
         n += 1
+    # (menu_bg.flv, the main page's looping background, comes from tools/menubg.py and lands in the same folder)
     for f in sorted(cut.glob("*.wav")):
         (OUT / "snd" / f.name).write_bytes(f.read_bytes())
         n += 1

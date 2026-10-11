@@ -234,22 +234,35 @@ int main(int, char**) {
     u64 pressed = 0; // buttons pressed since the last game frame
     int stickY = 0, stickX = 0; // -1, 0, 1: for menu navigation with the stick
     Game::Screen lastScreen = Game::Screen::Race;
+    bool tapPending = false; // a touch waiting for the next game step
+    float tapStageX = 0, tapStageY = 0;
 
     while (appletMainLoop() && !shell.quit) {
         padUpdate(&pad);
         u64 held = padGetButtons(&pad);
         u64 down = padGetButtonsDown(&pad);
-        {
-            HidAnalogStickState ls = padGetStickPos(&pad, 0);
-            menu::feed(held, ls.x, ls.y, 1.0 / 60);
-        }
-        if (menu::isOpen()) down = 0;
-        pressed |= down;
-
         u64 now = armGetSystemTick();
         const double elapsed = (double)(now - lastTick) / tickHz;
-        accumulator += elapsed;
         lastTick = now;
+        {
+            HidAnalogStickState ls = padGetStickPos(&pad, 0);
+            menu::feed(held, ls.x, ls.y, elapsed);
+        }
+        // Minus is the menu's hold-to-open button: the game sees it when it is let go early
+        down &= ~(u64)HidNpadButton_Minus;
+        if (menu::takeMinusTap()) down |= HidNpadButton_Minus;
+        float tapPx = 0, tapPy = 0;
+        const bool tapped = menu::takeTap(tapPx, tapPy);
+        if (menu::isOpen()) down = 0;
+        pressed |= down;
+        if (tapped) { // the 4:3 page sits in the middle of the 16:9 screen
+            tapStageX = (tapPx - 160.0f) / 1.875f;
+            tapStageY = tapPy / 1.875f;
+            tapPending = true;
+            logf("touch at %.0f,%.0f px = stage %.0f,%.0f", tapPx, tapPy, tapStageX, tapStageY);
+        }
+
+        accumulator += elapsed;
         if (accumulator > 0.2) accumulator = 0.2;
         if (menu::isOpen()) accumulator = 0; // the game stands still behind the menu
         const double tick = 1.0 / (30.0 * g_cfg.timeScale);
@@ -286,6 +299,10 @@ int main(int, char**) {
             in.rightPressed = (pressed & HidNpadButton_Right) || (sx == 1 && stickX != 1);
             stickX = sx;
             stickY = sy;
+            in.tap = tapPending;
+            in.tapX = tapStageX;
+            in.tapY = tapStageY;
+            tapPending = false;
             pressed = 0;
 
             const bool racing = shell.state == Shell::State::Race;

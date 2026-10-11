@@ -34,6 +34,7 @@ private:
     void enter(State s);
     const std::vector<Hotspot>& hotspots() const;
     void navigate(const Input& in);
+    bool touch(Input& in); // a finger tap: selects and presses what is under it
     void activate(int action);
     void playVideo(const std::string& file, bool fullScreen, bool loop = false);
     void stopVideo();
@@ -50,6 +51,7 @@ private:
     int sel_ = 0;
     State returnTo_ = State::Main; // where a full-screen video or wallpaper goes back to
     Video video_;
+    Video menuBg_;    // the page's looping background panel (media/menu_bg.flv: the animation behind the buttons)
     Video menuVideo_; // the clip that loops beside PLAY! on the main page (embedded in the original's menu movie)
     std::string videoFile_;
     bool videoFull_ = false, videoLoop_ = false;

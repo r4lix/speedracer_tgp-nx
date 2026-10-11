@@ -20,6 +20,13 @@ bool g_ready = false;
 uint64_t g_prevHeld = 0;
 bool g_touching = false;
 int g_forceTab = -1;
+int g_tab = 0;               // the tab on screen
+const float kHoldSeconds = 1.5f; // Minus held this long opens and closes the menu
+float g_minusTime = 0;       // how long Minus has been down
+bool g_minusFired = false;   // the hold already toggled the menu: its release is not a tap
+bool g_minusTap = false;     // Minus was pressed and released quickly: the game gets a button press
+bool g_tap = false;          // a finger went down outside the menu, at g_tapX/Y (screen pixels)
+float g_tapX = 0, g_tapY = 0;
 
 void padKey(ImGuiIO& io, ImGuiKey key, uint64_t held, uint64_t bit) { io.AddKeyEvent(key, (held & bit) != 0); }
 
@@ -189,8 +196,6 @@ void feed(uint64_t held, int lx, int ly, double dt) {
     padKey(io, ImGuiKey_GamepadDpadDown, held, HidNpadButton_Down);
     padKey(io, ImGuiKey_GamepadDpadLeft, held, HidNpadButton_Left);
     padKey(io, ImGuiKey_GamepadDpadRight, held, HidNpadButton_Right);
-    padKey(io, ImGuiKey_GamepadL1, held, HidNpadButton_L);
-    padKey(io, ImGuiKey_GamepadR1, held, HidNpadButton_R);
     analog(io, ImGuiKey_GamepadLStickLeft, ImGuiKey_GamepadLStickRight, lx);
     analog(io, ImGuiKey_GamepadLStickUp, ImGuiKey_GamepadLStickDown, -ly);
     // The touch screen is the mouse: a finger down is the left button held at that spot, up releases it and
@@ -202,6 +207,11 @@ void feed(uint64_t held, int lx, int ly, double dt) {
         if (ts.count > 0) {
             io.AddMousePosEvent((float)ts.touches[0].x, (float)ts.touches[0].y);
             io.AddMouseButtonEvent(0, true);
+            if (!g_touching && !g_open) { // the game's own pages are touched too: remember where the finger came down
+                g_tap = true;
+                g_tapX = (float)ts.touches[0].x;
+                g_tapY = (float)ts.touches[0].y;
+            }
             g_touching = true;
         } else if (g_touching) {
             io.AddMouseButtonEvent(0, false);
@@ -209,11 +219,42 @@ void feed(uint64_t held, int lx, int ly, double dt) {
             g_touching = false;
         }
     }
-    // R3 opens and closes; B closes unless a popup has it
     uint64_t pressed = held & ~g_prevHeld;
     g_prevHeld = held;
-    if (pressed & HidNpadButton_StickR) setOpen(!g_open);
-    else if (g_open && (pressed & HidNpadButton_B) && !ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId)) setOpen(false);
+    // Minus held for a second and a half opens and closes the menu; a quick press is the game's own Minus
+    // (deflector, sound), passed on at the release.
+    if (held & HidNpadButton_Minus) {
+        g_minusTime += (float)dt;
+        if (g_minusTime >= kHoldSeconds && !g_minusFired) {
+            g_minusFired = true;
+            setOpen(!g_open);
+        }
+    } else {
+        if (g_minusTime > 0 && !g_minusFired && !g_open) g_minusTap = true;
+        g_minusTime = 0;
+        g_minusFired = false;
+    }
+    if (g_open) {
+        // L and R turn the tabs
+        if (pressed & HidNpadButton_L) g_forceTab = (g_tab + 3) % 4;
+        if (pressed & HidNpadButton_R) g_forceTab = (g_tab + 1) % 4;
+        // B closes unless a popup has it
+        if ((pressed & HidNpadButton_B) && !ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId)) setOpen(false);
+    }
+}
+
+bool takeTap(float& px, float& py) {
+    if (!g_tap) return false;
+    g_tap = false;
+    px = g_tapX;
+    py = g_tapY;
+    return true;
+}
+
+bool takeMinusTap() {
+    const bool t = g_minusTap;
+    g_minusTap = false;
+    return t;
 }
 
 void draw(Shell& shell, double fps) {
@@ -222,16 +263,15 @@ void draw(Shell& shell, double fps) {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui::NewFrame();
     overlays(shell, fps);
-    if (!g_open && shell.state != Shell::State::Race) {
-        // a way in for touch play: a small button in the corner, outside the 4:3 page
-        ImGui::SetNextWindowPos(ImVec2(1280 - 8, 8), ImGuiCond_Always, ImVec2(1, 0));
-        ImGui::SetNextWindowBgAlpha(0.0f);
-        ImGuiWindowFlags bf = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
-                              ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBackground;
-        if (ImGui::Begin("##opener", nullptr, bf)) {
-            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.45f, 0.05f, 0.07f, 0.8f));
-            if (ImGui::Button("Settings")) setOpen(true);
-            ImGui::PopStyleColor();
+    if (g_minusTime > 0.25f && !g_minusFired) {
+        // the hold is under way: a bar fills up until the menu opens (or closes)
+        ImGui::SetNextWindowPos(ImVec2(640, 690), ImGuiCond_Always, ImVec2(0.5f, 1));
+        ImGui::SetNextWindowBgAlpha(0.6f);
+        ImGuiWindowFlags hf = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+                              ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoInputs;
+        if (ImGui::Begin("##hold", nullptr, hf)) {
+            ImGui::Text("%s", g_open ? "Keep holding - to close the settings" : "Keep holding - for the settings");
+            ImGui::ProgressBar(g_minusTime / kHoldSeconds, ImVec2(360, 14), "");
         }
         ImGui::End();
     }
@@ -239,22 +279,26 @@ void draw(Shell& shell, double fps) {
         ImGui::SetNextWindowSize(ImVec2(900, 640), ImGuiCond_Appearing);
         ImGui::SetNextWindowPos(ImVec2(640, 360), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
         bool open = true;
-        if (ImGui::Begin("Speed Racer - settings   (R3 or B closes)", &open, ImGuiWindowFlags_NoCollapse)) {
+        if (ImGui::Begin("Speed Racer - settings   (L / R: tabs   B or hold - : close)", &open, ImGuiWindowFlags_NoCollapse)) {
             if (ImGui::BeginTabBar("tabs")) {
                 auto flag = [](int t) { return g_forceTab == t ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None; };
                 if (ImGui::BeginTabItem("Controls", nullptr, flag(0))) {
+                    g_tab = 0;
                     controls();
                     ImGui::EndTabItem();
                 }
                 if (ImGui::BeginTabItem("Audio", nullptr, flag(1))) {
+                    g_tab = 1;
                     audioTab();
                     ImGui::EndTabItem();
                 }
                 if (ImGui::BeginTabItem("Interface", nullptr, flag(2))) {
+                    g_tab = 2;
                     interfaceTab();
                     ImGui::EndTabItem();
                 }
                 if (ImGui::BeginTabItem("Debug", nullptr, flag(3))) {
+                    g_tab = 3;
                     debugTab(shell);
                     ImGui::EndTabItem();
                 }

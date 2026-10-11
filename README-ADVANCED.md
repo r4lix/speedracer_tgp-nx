@@ -65,8 +65,8 @@ The same behaviour is available without files from the settings menu's Debug tab
 - `tools/bake.py` - GLB scenes and media -> the files the Switch build loads from `romfs/`.
 - `tools/swfdump.py`, `swftimeline.py`, `swfaudio.py`, `swfstrip.py`, `swfvideo.py` - inspect and extract the Flash
   movies inside the Director movie (tags, bitmaps, timelines, audio, video streams).
-- `tools/cutscene.py`, `tools/introvideo.py` - render the result cartoons and the intro to FLV (Ruffle web build
-  driven by `tools/swfcapture/`).
+- `tools/cutscene.py`, `tools/introvideo.py`, `tools/menubg.py` - render the result cartoons, the intro and the main page's
+  looping background panel to FLV (Ruffle web build driven by `tools/swfcapture/`; `swfstrip.py` makes the sound-less copy).
 - `tools/exeicon.py` - pulls the icon out of the original executable.
 - `tools/telemetry/` - reads the original game's physics state from process memory and drives it, to compare
   against the port.
@@ -87,6 +87,6 @@ The same behaviour is available without files from the settings menu's Debug tab
 | Minus | deflector |
 | Left stick click | show/hide the help panel |
 | Plus | back to the main page (quit from the main page) |
-| Right stick click (R3) | settings menu; B or R3 closes |
+| Minus held 1.5 s | settings menu; L / R change tab, B or another long Minus closes (a quick Minus press is the deflector) |
 
-The settings menu also works by touch on the front end (a Settings button in the top-right corner).
+Touch works in the settings menu and on the front-end pages (tap what the page shows); it does not steer the car.

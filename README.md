@@ -39,7 +39,7 @@ screen. Best score, the bonus wallpaper and solved puzzles are kept in `speedrac
 | Minus | deflector |
 | Left stick click | show/hide the help panel |
 | Plus | back to the main page (quit from the main page) |
-| Right stick click (R3) | settings menu (Dear ImGui): controls, audio, interface, debug; B or R3 closes |
+| Minus, held 1.5 seconds | settings menu (Dear ImGui): controls, audio, interface, debug; L and R change tab, B or another long Minus closes. A quick press of Minus is still the deflector (sound on/off on the menu pages) |
 
 ## Tools
 - `tools/w3d.py` - Shockwave 3D (W3D/IFX) parser and CLOD mesh decoder, exports GLB. Ported from
@@ -56,10 +56,10 @@ More debug switches: `speedracer_jackloop` (with autodrive + hold: tap the throt
 
 ## Settings menu
 
-R3 opens a Dear ImGui menu over the front end and the race (the game stands still while it is open). Four tabs:
+Holding Minus for 1.5 seconds opens a Dear ImGui menu over the front end and the race (the game stands still while it is open; L and R change tab). Four tabs:
 **Controls** (D-pad and stick steering, dead zone, invert, which buttons accelerate and brake, throttle always on),
 **Audio** (mute, master volume), **Interface** (HUD against the screen edges or the original's centred 4:3 layout,
 the key list, skip the opening animation, frame-rate and car-stats overlays) and **Debug** (no damage, autopilot,
 jacks on every landing, game speed, start at a path point, restart race, per-frame wheel log). Settings are kept in
-`sdmc:/speedracer.cfg`. The touch screen works too: a **Settings** button sits in the top-right corner of the front end,
-every control is finger-sized and a **Close** button ends the menu. Dear ImGui 1.91.5 (MIT) lives in `src/third_party/imgui`.
+`sdmc:/speedracer.cfg`. The touch screen works in the settings menu (finger-sized controls, a **Close** button) and on the
+front-end pages: tap PLAY!, the tabs, the clips, the wallpapers, the mini-game pieces and their buttons, the SOUND switch. Dear ImGui 1.91.5 (MIT) lives in `src/third_party/imgui`.

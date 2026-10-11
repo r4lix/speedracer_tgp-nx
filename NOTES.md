@@ -148,3 +148,12 @@ Source: `Havok.x32` (573,440 bytes, sha256 `90694ddbad361fbf...`), one of 12 zli
   embedded Sorenson H.263 stream (100x80, 402 frame slots, 322 present, 13.4 s) in the menu movie `XMED-5196`
   (DefineVideoStream 134, VideoFrame tags in sprite 135). `tools/swfvideo.py` writes it out as an FLV, `bake.py` puts
   it in `romfs/media/menu_preview.flv`, and the port loops it over the captured page with a red wash like the original's.
+
+- Main page background (2026-10-11): the big panel under the title is an animation in the menu movie (sprite 106, 330
+  frames, loops with no seam: frame 341 of the capture equals frame 11). Ruffle froze 143 frames in when the preview
+  video's frames were present, so `swfstrip.py --video` drops them too; `tools/menubg.py` cuts the panel (stage rows 135..316)
+  out of the capture into `media/menu_bg.flv` (512x181, 1.5 MB), played under the preview clip and the buttons.
+- Menu input (2026-10-11): Minus held 1.5 s opens the Dear ImGui menu (a bar fills while holding); a quick press is passed to
+  the game at the release. L / R change its tabs. Touch also drives the original pages: a tap selects the hotspot under it and
+  presses A (`Shell::touch`), the jigsaw/slider boards, SCRAMBLE / HINT / BACK and the SOUND label take taps too. Racing is
+  still pad only.

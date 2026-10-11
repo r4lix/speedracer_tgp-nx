@@ -390,7 +390,97 @@ void Shell::drawPuzzle(bool jigsaw) {
 
 // ---------------------------------------------------------------- per-frame logic
 
-void Shell::frame(const Input& in) {
+// A finger tap (stage coordinates in.tapX/tapY) does what the pad would at that spot: it selects the hotspot
+// under the finger and presses A, or presses the button the page draws there. Returns true when it was handled.
+bool Shell::touch(Input& in) {
+    const float x = in.tapX, y = in.tapY;
+    auto inside = [&](float rx, float ry, float rw, float rh, float pad = 3) {
+        return x >= rx - pad && x < rx + rw + pad && y >= ry - pad && y < ry + rh + pad;
+    };
+    switch (state) {
+    case State::Main:
+    case State::Clips:
+    case State::Wallpaper:
+    case State::Mini:
+    case State::About:
+    case State::HowTo: {
+        if (inside(410, 10, 102, 22, 0)) { // SOUND ON ( - )
+            audio::setMuted(!audio::muted());
+            return true;
+        }
+        const std::vector<Hotspot>& hs = hotspots();
+        for (int i = 0; i < (int)hs.size(); ++i) {
+            if (!inside(hs[i].x, hs[i].y, hs[i].w, hs[i].h)) continue;
+            sel_ = i;
+            in.confirm = true;
+            return false;
+        }
+        if (state == State::About || state == State::HowTo) { // these pages show the tab bar too
+            static const struct { float x; int action; } tabs[] = {{6, ActTabRace}, {103, ActTabClips}, {200, ActTabWall}, {297, ActTabMini}};
+            for (const auto& t : tabs) {
+                if (!inside(t.x, 119, 93, 15)) continue;
+                activate(t.action);
+                return true;
+            }
+        }
+        if (state == State::Clips && video_.isOpen() && !videoFull_ && inside(272, 193, 225, 163, 0)) {
+            playVideo(videoFile_, true); // the playing clip: full screen
+            return true;
+        }
+        return false;
+    }
+    case State::ViewWallpaper:
+    case State::Playing:
+        in.confirm = true;
+        return false;
+    case State::Jigsaw:
+    case State::Slider: {
+        const bool jigsaw = state == State::Jigsaw;
+        const float bx = 14, by = 52, bw = 300, bh = 300, tx = 330;
+        if (puzzleSolved_ && inside(bx, by, bw, bh, 0)) {
+            in.confirm = true;
+        } else if (inside(bx, by, bw, bh, 0)) {
+            const int cx = (int)((x - bx) / (bw / cols_)), cy = (int)((y - by) / (bh / rows_));
+            if (jigsaw) {
+                cursor_ = cy * cols_ + cx;
+                in.confirm = true; // pick up, then put down on the next tap
+            } else {
+                // a piece next to the gap slides into it
+                const int gx = cursor_ % cols_, gy = cursor_ / cols_;
+                if (cy == gy && cx == gx - 1) in.rightPressed = true;
+                else if (cy == gy && cx == gx + 1) in.leftPressed = true;
+                else if (cx == gx && cy == gy - 1) in.down = true;
+                else if (cx == gx && cy == gy + 1) in.up = true;
+            }
+        } else if (inside(tx + 8, 262, 150, 26, 0)) {
+            in.jacks = true; // SCRAMBLE
+        } else if (inside(tx + 8, 294, 150, 26, 0)) {
+            in.blades = true; // HINT
+        } else if (inside(tx, 326, 170, 24, 0)) {
+            if (x > tx + 100) in.cancel = true; // BACK
+            else in.robot = true;               // next picture
+        }
+        return false;
+    }
+    case State::Result:
+        if (resultIntro_) {
+            in.confirm = true;
+            return false;
+        }
+        for (int i = 0; i < (int)hotspots().size(); ++i) {
+            const Hotspot& h = hotspots()[i];
+            if (!inside(h.x, h.y, h.w, h.h)) continue;
+            sel_ = i;
+            in.confirm = true;
+        }
+        return false;
+    default:
+        return false;
+    }
+}
+
+void Shell::frame(const Input& input) {
+    Input in = input;
     ++frames;
     spin_ -= 2; // doSpinner: 2 degrees per frame
     if (state != State::Race && in.deflector) audio::setMuted(!audio::muted()); // Minus: mute
@@ -405,6 +495,7 @@ void Shell::frame(const Input& in) {
         }
         return;
     }
+    if (in.tap && touch(in)) return;
     switch (state) {
     case State::Main:
     case State::Clips:
@@ -550,6 +641,9 @@ void Shell::drawHotspots(const char* const* fallbackLabels) {
 void Shell::draw(Renderer& renderer, double seconds) {
     if (video_.isOpen()) video_.update(seconds);
     if (state == State::Main) {
+        // the panel's background animation: 512x181, no sound, 11 s, seamless
+        if (!menuBg_.isOpen() || menuBg_.finished()) menuBg_.open("file:romfs:/media/menu_bg.flv");
+        if (menuBg_.isOpen()) menuBg_.update(seconds);
         // the loop beside PLAY!: 100x80, no sound, 13 s; reopened when it ends
         if (!menuVideo_.isOpen() || menuVideo_.finished()) menuVideo_.open("file:romfs:/media/menu_preview.flv");
         if (menuVideo_.isOpen()) menuVideo_.update(seconds);
@@ -575,6 +669,7 @@ void Shell::draw(Renderer& renderer, double seconds) {
     case State::Main: {
         const bool cap = ui::hasImage("ref_main");
         drawPage("ref_main");
+        if (menuBg_.isOpen() && menuBg_.texture()) ui::texture(menuBg_.texture(), 0, 135, 512, 181); // over the capture's still panel
         if (menuVideo_.isOpen() && menuVideo_.texture()) { // over the still the capture has there
             ui::rect(401, 141, 102, 82, glm::vec4(0.5f, 0.07f, 0.1f, 1));
             ui::texture(menuVideo_.texture(), 402, 142, 100, 80);
