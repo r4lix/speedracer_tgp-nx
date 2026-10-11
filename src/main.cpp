@@ -289,6 +289,8 @@ int main(int, char**) {
             in.frogger = pressed & actionMask(ActFrogger);
             in.deflector = pressed & actionMask(ActDeflector);
             in.help = pressed & actionMask(ActHelp);
+            in.boost = (held & actionMask(ActBoost)) != 0;
+            in.flyUp = (held & actionMask(ActFlyUp)) != 0;
             in.confirm = pressed & HidNpadButton_A;
             in.cancel = pressed & HidNpadButton_B;
             in.menu = pressed & HidNpadButton_Plus;
@@ -328,6 +330,8 @@ int main(int, char**) {
                 else autoPilot(game, in);
                 in.confirm = false;
             }
+            if (racing && fileExists("sdmc:/speedracer_flyup")) in.flyUp = true; // debug: hold the cheats' buttons
+            if (racing && fileExists("sdmc:/speedracer_turbo")) in.boost = true;
             if (noDamage || g_cfg.noDamage) game.gDamage = 0;
             if (g_cfg.jackLoop && racing && game.isPlaying) in.jacks = true;
             if (forceResult >= 0 && racing && game.frameCount == 60) {

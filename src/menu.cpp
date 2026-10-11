@@ -115,9 +115,42 @@ void interfaceTab() {
     ImGui::Checkbox("Car stats", &g_cfg.showStats);
 }
 
+void cheatsTab() {
+    const char* turbo = buttonName(g_cfg.bind[ActBoost]);
+    const char* up = buttonName(g_cfg.bind[ActFlyUp]);
+    ImGui::SeparatorText("Survive");
+    ImGui::Checkbox("Invincible", &g_cfg.noDamage);
+    tip("The damage bar never fills.");
+    ImGui::SameLine();
+    ImGui::Checkbox("Infinite oxygen", &g_cfg.infiniteOxygen);
+    ImGui::Checkbox("Never fall off", &g_cfg.neverFall);
+    tip("Over the edge, the car is put back on the road where it last had four wheels down.");
+    ImGui::SeparatorText("Gadgets");
+    ImGui::Checkbox("Unlimited gadgets", &g_cfg.unlimitedGadgets);
+    tip("Blades, grip tires and the deflector stay on until you switch them off; jacks and the robot are ready again at once.");
+    ImGui::Checkbox("Jacks in mid-air", &g_cfg.airJacks);
+    ImGui::SliderFloat("Jack power", &g_cfg.jackPower, 1.0f, 4.0f, "%.1fx");
+    ImGui::SliderFloat("Pickup reach", &g_cfg.pickupReach, 0.0f, 40.0f, g_cfg.pickupReach > 0 ? "+%.0f" : "normal");
+    tip("Wrenches, candy, oxygen and robot refills are collected from further away.");
+    ImGui::SeparatorText("Speed and flight");
+    ImGui::SliderFloat("Top speed", &g_cfg.topSpeed, 1.0f, 3.0f, "%.1fx");
+    ImGui::Checkbox("Turbo", &g_cfg.turbo);
+    ImGui::SameLine();
+    ImGui::TextDisabled("hold %s", turbo);
+    ImGui::SliderFloat("Turbo power", &g_cfg.turboPower, 0.2f, 3.0f, "%.1fx");
+    ImGui::Checkbox("Fly", &g_cfg.fly);
+    ImGui::SameLine();
+    ImGui::TextDisabled("hold %s to climb, drive pushes forward in the air, the car glides down", up);
+    ImGui::SliderFloat("Gravity", &g_cfg.gravityScale, 0.1f, 1.0f, "%.2fx");
+    ImGui::SeparatorText("Traffic");
+    ImGui::Checkbox("Ghost car", &g_cfg.ghostCars);
+    tip("The other cars no longer bump into you.");
+    ImGui::SliderFloat("Rival speed", &g_cfg.rivalSpeed, 0.0f, 1.5f, g_cfg.rivalSpeed > 0 ? "%.2fx" : "parked");
+    if (ImGui::Button("All cheats off")) resetCheats();
+}
+
 void debugTab(Shell& shell) {
-    ImGui::SeparatorText("Cheats");
-    ImGui::Checkbox("No damage", &g_cfg.noDamage);
+    ImGui::SeparatorText("Automation");
     ImGui::Checkbox("Autopilot", &g_cfg.autopilot);
     tip("The car follows the path points by itself.");
     ImGui::Checkbox("Jacks on every landing", &g_cfg.jackLoop);
@@ -272,8 +305,8 @@ void feed(uint64_t held, int lx, int ly, double dt) {
     }
     if (g_open) {
         // L and R turn the tabs
-        if (pressed & HidNpadButton_L) g_forceTab = (g_tab + 3) % 4;
-        if (pressed & HidNpadButton_R) g_forceTab = (g_tab + 1) % 4;
+        if (pressed & HidNpadButton_L) g_forceTab = (g_tab + 4) % 5;
+        if (pressed & HidNpadButton_R) g_forceTab = (g_tab + 1) % 5;
         // B closes unless a popup has it
         if ((pressed & HidNpadButton_B) && !ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId)) setOpen(false);
     }
@@ -312,7 +345,7 @@ void draw(Shell& shell, double fps) {
         ImGui::End();
     }
     if (g_open) {
-        ImGui::SetNextWindowSize(ImVec2(900, 640), ImGuiCond_Appearing);
+        ImGui::SetNextWindowSize(ImVec2(900, 680), ImGuiCond_Appearing);
         ImGui::SetNextWindowPos(ImVec2(640, 360), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
         bool open = true;
         char title[112];
@@ -336,8 +369,13 @@ void draw(Shell& shell, double fps) {
                     interfaceTab();
                     ImGui::EndTabItem();
                 }
-                if (ImGui::BeginTabItem("Debug", nullptr, flag(3))) {
+                if (ImGui::BeginTabItem("Cheats", nullptr, flag(3))) {
                     g_tab = 3;
+                    cheatsTab();
+                    ImGui::EndTabItem();
+                }
+                if (ImGui::BeginTabItem("Debug", nullptr, flag(4))) {
+                    g_tab = 4;
                     debugTab(shell);
                     ImGui::EndTabItem();
                 }

@@ -14,6 +14,7 @@ struct Input {
     bool jacks = false, grip = false, blades = false, deflector = false, lights = false, frogger = false,
          robot = false, help = false, confirm = false, cancel = false, up = false, down = false,
          leftPressed = false, rightPressed = false, menu = false; // menu: the + button
+    bool boost = false, flyUp = false; // held: the cheats' Turbo and Fly up buttons
     bool tap = false;           // a finger touched the screen this frame, at tapX/tapY in stage coordinates (512x384)
     float tapX = 0, tapY = 0;
 };
@@ -149,6 +150,9 @@ public:
     float tMaxY = 0;
     glm::vec3 stepPos{0};
     long pCollisionTimeout = -1000;
+    glm::vec3 safeX{0}; // where the car last stood on all four wheels (the Never fall off cheat)
+    glm::quat safeQ{1, 0, 0, 0};
+    bool safeValid = false;
     bool pHasBlades = false, pHasGrip = false, pHasLights = false, pHasScope = false, pHasJacks = false, pHasShield = false;
     long pBladesTIMER = 0, pGripTIMER = 0, pDeflectorTIMER = 0, jacksTIMER = 0;
     float pSheildRotate = 80, pBladeFactor = 0.1f, lightsBlend = 0;

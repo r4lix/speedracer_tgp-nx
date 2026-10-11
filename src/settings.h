@@ -6,7 +6,7 @@
 // Pad buttons that can be given to an action (the d-pad's left and right steer, Plus is "back").
 enum PadBtn { BtnA, BtnB, BtnX, BtnY, BtnL, BtnR, BtnZL, BtnZR, BtnL3, BtnR3, BtnMinus, BtnUp, BtnDown, BtnNone, BtnCount };
 // What a button can be set to do. Drive and Brake are held; the others are presses. Menu is a long press (1.5 s).
-enum Action { ActDrive, ActBrake, ActJacks, ActGrip, ActBlades, ActDeflector, ActLights, ActFrogger, ActRobot, ActHelp, ActMenu, ActionCount };
+enum Action { ActDrive, ActBrake, ActJacks, ActGrip, ActBlades, ActDeflector, ActLights, ActFrogger, ActRobot, ActHelp, ActBoost, ActFlyUp, ActMenu, ActionCount };
 
 struct Settings {
     // controls
@@ -14,7 +14,7 @@ struct Settings {
     bool stickSteer = true;      // left stick steers
     bool invertSteer = false;
     float stickDeadzone = 0.37f; // 0..1 of the stick's travel (the original's 12000 / 32767)
-    int bind[ActionCount] = {BtnZR, BtnZL, BtnA, BtnB, BtnY, BtnMinus, BtnUp, BtnDown, BtnR, BtnL3, BtnMinus};
+    int bind[ActionCount] = {BtnZR, BtnZL, BtnA, BtnB, BtnY, BtnMinus, BtnUp, BtnDown, BtnR, BtnL3, BtnX, BtnL, BtnMinus};
     bool autoAccelerate = false; // throttle held without a button, brake still works
     // audio
     bool mute = false;
@@ -25,8 +25,22 @@ struct Settings {
     bool showFps = false;
     bool showStats = false;      // speed, position, surface, wheels
     bool skipIntro = false;      // next start
-    // debug
+    // cheats (the Cheats tab); the Turbo and Fly up buttons are bindings too
     bool noDamage = false;
+    bool infiniteOxygen = false;
+    bool neverFall = false;        // back on the road where the car last stood on all four wheels
+    bool unlimitedGadgets = false; // blades, grip tyres and deflector stay on, jacks and the robot are ready again at once
+    bool airJacks = false;         // jacks also work in the air
+    float jackPower = 1.0f;        // 1..4
+    float topSpeed = 1.0f;         // 1..3 times the 69 u/s cap
+    bool turbo = false;            // the Turbo button pushes the car forward
+    float turboPower = 1.0f;       // 0.2..3
+    bool fly = false;              // the car floats, drive thrusts in the air, the Fly up button climbs
+    float gravityScale = 1.0f;     // 0.1..1
+    bool ghostCars = false;        // the car passes through the others
+    float rivalSpeed = 1.0f;       // 0 (parked) .. 1.5 times their usual speed
+    float pickupReach = 0.0f;      // extra pickup radius in units
+    // debug
     bool autopilot = false;
     bool jackLoop = false;       // jacks again on every landing
     float timeScale = 1.0f;      // game speed, 0.25 .. 2
@@ -49,3 +63,4 @@ const char* actionLabel(int action);
 // except that the menu button may share a button with a press action: its short press still reaches the game.
 void assignButton(int action, int button);
 void resetBindings();
+void resetCheats(); // every cheat off, every cheat number back to normal

@@ -31,7 +31,9 @@ FreeType. Rendering is OpenGL 4.3 core through switch-mesa.
 `sdmc:/speedracer.cfg` is a plain `key=value` file written by the settings menu (R3). The keys are the fields of
 `struct Settings` in `src/settings.h`: steering (`dpadSteer`, `stickSteer`, `invertSteer`, `stickDeadzone`),
 `autoAccelerate` and one `bind_*` line per action, audio (`mute`, `masterVolume`),
-interface (`hudAnchored`, `showHelp`, `showFps`, `showStats`, `skipIntro`) and debug (`noDamage`, `autopilot`,
+interface (`hudAnchored`, `showHelp`, `showFps`, `showStats`, `skipIntro`), cheats (`noDamage`, `infiniteOxygen`, `neverFall`,
+`unlimitedGadgets`, `airJacks`, `jackPower`, `topSpeed`, `turbo`, `turboPower`, `fly`, `gravityScale`, `ghostCars`, `rivalSpeed`,
+`pickupReach`) and debug (`autopilot`,
 `jackLoop`, `timeScale`, `startPath`, `logHover`). Edit it by hand if you prefer.
 
 ## Debug switches
@@ -49,10 +51,12 @@ Empty files on the SD card root that `src/main.cpp` looks for at start-up (the r
 | `speedracer_gadgets` | fires each gadget in turn |
 | `speedracer_menudemo` | walks through the front end |
 | `speedracer_nointro` | skip the opening animation |
+| `speedracer_flyup` | holds the Fly up button (with the Fly cheat on) |
+| `speedracer_turbo` | holds the Turbo button (with the Turbo cheat on) |
 | `speedracer_hoverlog` | logs position, speed and wheel state for every frame |
 | `speedracer_startpath` | contains a path point number to start the race from |
 | `speedracer_result` | contains a result to show on the result screen |
-| `speedracer_menu` | contains a tab number: open the settings menu on that tab |
+| `speedracer_menu` | contains a tab number (0 controls .. 3 cheats, 4 debug): open the settings menu on that tab |
 
 The same behaviour is available without files from the settings menu's Debug tab.
 
@@ -73,5 +77,5 @@ The same behaviour is available without files from the settings menu's Debug tab
 
 ## Controls
 The default buttons are in README.md. In `sdmc:/speedracer.cfg` each action is a `bind_<action>=<button>` line
-(`drive`, `brake`, `jacks`, `belt`, `cutter`, `deflector`, `lights`, `frogger`, `robot`, `help`, `menu`; buttons `A B X Y L R ZL ZR L3 R3 Minus Up Down None`).
+(`drive`, `brake`, `jacks`, `belt`, `cutter`, `deflector`, `lights`, `frogger`, `robot`, `help`, `turbo`, `flyup`, `menu`; buttons `A B X Y L R ZL ZR L3 R3 Minus Up Down None`).
 Touch works in the settings menu and on the front-end pages (tap what the page shows); it does not steer the car.

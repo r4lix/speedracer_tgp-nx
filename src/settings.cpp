@@ -1,5 +1,6 @@
 #include "settings.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -27,6 +28,13 @@ Entry entries[] = {
     {"noDamage", Entry::Bool, &g_cfg.noDamage},         {"autopilot", Entry::Bool, &g_cfg.autopilot},
     {"jackLoop", Entry::Bool, &g_cfg.jackLoop},         {"timeScale", Entry::Float, &g_cfg.timeScale},
     {"startPath", Entry::Int, &g_cfg.startPath},        {"logHover", Entry::Bool, &g_cfg.logHover},
+    {"infiniteOxygen", Entry::Bool, &g_cfg.infiniteOxygen}, {"neverFall", Entry::Bool, &g_cfg.neverFall},
+    {"unlimitedGadgets", Entry::Bool, &g_cfg.unlimitedGadgets}, {"airJacks", Entry::Bool, &g_cfg.airJacks},
+    {"jackPower", Entry::Float, &g_cfg.jackPower},      {"topSpeed", Entry::Float, &g_cfg.topSpeed},
+    {"turbo", Entry::Bool, &g_cfg.turbo},               {"turboPower", Entry::Float, &g_cfg.turboPower},
+    {"fly", Entry::Bool, &g_cfg.fly},                   {"gravityScale", Entry::Float, &g_cfg.gravityScale},
+    {"ghostCars", Entry::Bool, &g_cfg.ghostCars},       {"rivalSpeed", Entry::Float, &g_cfg.rivalSpeed},
+    {"pickupReach", Entry::Float, &g_cfg.pickupReach},
 };
 struct ButtonInfo {
     const char* name;
@@ -41,10 +49,11 @@ const ButtonInfo kButtons[BtnCount] = {
     {"Down", "DOWN", HidNpadButton_Down}, {"None", "-", 0},
 };
 const char* kActionNames[ActionCount] = {"Drive", "Brake / reverse", "Jacks", "Belt tires", "Cutter blades", "Deflector",
-                                         "Illumination", "Frogger mode", "Homing robot", "Help panel", "Open settings (hold)"};
-const char* kActionKeys[ActionCount] = {"drive", "brake", "jacks", "belt", "cutter", "deflector", "lights", "frogger", "robot", "help", "menu"};
+                                         "Illumination", "Frogger mode", "Homing robot", "Help panel", "Turbo (cheat)", "Fly up (cheat)",
+                                         "Open settings (hold)"};
+const char* kActionKeys[ActionCount] = {"drive", "brake", "jacks", "belt", "cutter", "deflector", "lights", "frogger", "robot", "help", "turbo", "flyup", "menu"};
 
-bool pressAction(int a) { return a != ActDrive && a != ActBrake && a != ActMenu; }
+bool pressAction(int a) { return a != ActDrive && a != ActBrake && a != ActMenu && a != ActBoost && a != ActFlyUp; }
 } // namespace
 
 const char* actionName(int action) { return kActionNames[action]; }
@@ -60,6 +69,24 @@ void assignButton(int action, int button) {
         if (!share) g_cfg.bind[other] = old;
     }
     g_cfg.bind[action] = button;
+}
+
+void resetCheats() {
+    const Settings d;
+    g_cfg.noDamage = d.noDamage;
+    g_cfg.infiniteOxygen = d.infiniteOxygen;
+    g_cfg.neverFall = d.neverFall;
+    g_cfg.unlimitedGadgets = d.unlimitedGadgets;
+    g_cfg.airJacks = d.airJacks;
+    g_cfg.jackPower = d.jackPower;
+    g_cfg.topSpeed = d.topSpeed;
+    g_cfg.turbo = d.turbo;
+    g_cfg.turboPower = d.turboPower;
+    g_cfg.fly = d.fly;
+    g_cfg.gravityScale = d.gravityScale;
+    g_cfg.ghostCars = d.ghostCars;
+    g_cfg.rivalSpeed = d.rivalSpeed;
+    g_cfg.pickupReach = d.pickupReach;
 }
 
 void resetBindings() {
@@ -97,6 +124,12 @@ void loadSettings() {
     if (g_cfg.stickDeadzone < 0.05f || g_cfg.stickDeadzone > 0.95f) g_cfg.stickDeadzone = 0.37f;
     if (g_cfg.masterVolume < 0 || g_cfg.masterVolume > 1) g_cfg.masterVolume = 1;
     if (g_cfg.startPath < 0 || g_cfg.startPath > 209) g_cfg.startPath = 0;
+    g_cfg.jackPower = std::min(4.0f, std::max(1.0f, g_cfg.jackPower));
+    g_cfg.topSpeed = std::min(3.0f, std::max(1.0f, g_cfg.topSpeed));
+    g_cfg.turboPower = std::min(3.0f, std::max(0.2f, g_cfg.turboPower));
+    g_cfg.gravityScale = std::min(1.0f, std::max(0.1f, g_cfg.gravityScale));
+    g_cfg.rivalSpeed = std::min(1.5f, std::max(0.0f, g_cfg.rivalSpeed));
+    g_cfg.pickupReach = std::min(40.0f, std::max(0.0f, g_cfg.pickupReach));
 }
 
 void saveSettings() {

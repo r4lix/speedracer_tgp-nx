@@ -161,3 +161,10 @@ Source: `Havok.x32` (573,440 bytes, sha256 `90694ddbad361fbf...`), one of 12 zli
   Down frogger, R robot, L3 help; every one (and the menu's hold button) can be rebound in the Controls tab (`Settings::bind`,
   `assignButton` swaps when a button is taken). The front end keeps A = choose, B = back, Plus = back. A and B also count as
   choose/back on the result screen, so those two are ignored for its first 24 frames (jacks mashing must not skip the cartoon).
+- Cheats (2026-10-11, Cheats tab, `Settings` fields + `game.cpp`): unlimited gadgets keep the timers topped up, reset the robot and
+  allow jacks without the cooldown; jacks in mid-air and jack power scale `mass * 40`; top speed sets `pMaxSpeed = 69 * x` (2.5x
+  reached 134-142 u/s on the straight); turbo adds `1.5 * mass * power` of impulse along the nose per frame while the Turbo
+  button (default X) is held (autopilot run: 88-100 u/s against 55-66); fly caps the car's gravity at 0.2, the Fly up button (L)
+  climbs at up to 28 u/s and in the air drive and stick push and turn the car (autopilot with fly-up held: z 14 -> 560 in 10 s);
+  never fall off puts the car back at the last place it stood on four wheels; ghost car skips car-vs-rival contacts; rival speed
+  scales their target speed; pickup reach widens the pickup test.

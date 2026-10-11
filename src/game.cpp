@@ -1,4 +1,5 @@
 #include "game.h"
+#include "settings.h"
 
 #include <algorithm>
 #include <cmath>
@@ -499,10 +500,10 @@ void Game::keyDown(const Input& in) {
             pHasLights = false;
         }
     }
-    if (in.jacks && !pHasJacks && car.powerCoeff == 1) {
+    if (in.jacks && (!pHasJacks || g_cfg.unlimitedGadgets) && (car.powerCoeff == 1 || g_cfg.airJacks)) {
         pHasJacks = true;
         audio::play(M5FX, "m5_jump");
-        car.body.applyImpulse(glm::vec3(0, 0, car.body.mass * 40));
+        car.body.applyImpulse(glm::vec3(0, 0, car.body.mass * 40 * g_cfg.jackPower));
         jacksTIMER = ticks() + 80;
         showTxt("Jacks", "Jacks");
     }
@@ -530,7 +531,9 @@ void Game::physicsStep() {
             car.body.applyAngularImpulse(-(200.0f * h) * (correctorStrength * spring + 1000.0f * car.body.w));
         }
         // With the blades out the script switches Havok off between the car and the trees.
-        car.body.substep(h, kGravity, level.collision, car.spheres, &car.worldHit, pHasBlades);
+        // cheats: the Gravity slider, and flight floats the car
+        const float carGravity = g_cfg.fly ? std::min(g_cfg.gravityScale, 0.2f) : g_cfg.gravityScale;
+        car.body.substep(h, kGravity * carGravity, level.collision, car.spheres, &car.worldHit, pHasBlades);
         for (Enemy& e : enemies) {
             if (e.alive) e.body.substep(h, kGravity, level.collision, e.spheres, &e.worldHit);
             if (e.deadVisible) {
@@ -542,7 +545,7 @@ void Game::physicsStep() {
         for (int i = 0; i < 3; ++i) {
             if (!enemies[i].alive) continue;
             glm::vec3 n(0);
-            float f = collideBodies(car.body, car.spheres, enemies[i].body, enemies[i].spheres, 0.2f, &n);
+            float f = g_cfg.ghostCars ? 0.0f : collideBodies(car.body, car.spheres, enemies[i].body, enemies[i].spheres, 0.2f, &n);
             if (f > carEnemy[i]) {
                 carEnemy[i] = f;
                 carEnemyN[i] = n;
@@ -636,6 +639,7 @@ void Game::enemyHit(Enemy& e, int hitKind, float hitforce, const glm::vec3& norm
 void Game::updateMach5(const Input& in) {
     Vehicle& c = car;
     RigidBody& rb = c.body;
+    pMaxSpeed = 69 * g_cfg.topSpeed; // cheat: the Top speed slider
     glm::vec3 tPosition = rb.origin();
     glm::mat3 rot = rb.rotation();
     float ty = tPosition.y;
@@ -689,6 +693,13 @@ void Game::updateMach5(const Input& in) {
         }
     }
 
+    if (g_cfg.unlimitedGadgets) { // cheat: nothing runs out
+        if (pHasBlades) pBladesTIMER = ticks() + 240;
+        if (pHasGrip) pGripTIMER = ticks() + 500;
+        if (pHasShield) pDeflectorTIMER = ticks() + 500;
+        if (gROBOTMODE == 4) gROBOTMODE = 0;
+    }
+
     // Periscope canopy: oxygen runs down once the shield is fully closed
     if (pSheildRotate == 0 && pHasScope) {
         gOxygenMODE = 1;
@@ -696,6 +707,7 @@ void Game::updateMach5(const Input& in) {
     } else {
         gOxygenMODE = 2;
     }
+    if (g_cfg.infiniteOxygen) gOxygen = 100;
     if (pHasShield || pHasScope) {
         shieldVisible = true;
         pSheildRotate = std::max(0.0f, pSheildRotate - 5);
@@ -741,6 +753,15 @@ void Game::updateMach5(const Input& in) {
     gM5Speed = forwardVel;
 
     c.powerCoeff = (float)(c.isHovering[0] + c.isHovering[1] + c.isHovering[2] + c.isHovering[3]);
+    if (g_cfg.neverFall && chassisPos.z <= -10 && c.powerCoeff == 0 && trackFace == 99 && safeValid) {
+        // cheat: back to where the car last had all four wheels on the road, facing the way it was going
+        rb.x = safeX;
+        rb.q = safeQ;
+        rb.v = glm::vec3(0);
+        rb.w = glm::vec3(0);
+        audio::play(M5FX, "m5_chirp");
+        return;
+    }
     if (chassisPos.z <= -10 && c.powerCoeff == 0 && trackFace == 99 && !isGameOver) {
         // go("CLIFF"): fell off the track
         isGameOver = true;
@@ -759,6 +780,11 @@ void Game::updateMach5(const Input& in) {
         c.powerCoeff /= 4.0f;
     }
     const float powerCoeff = c.powerCoeff;
+    if (powerCoeff == 1 && forwardVel > 3 && trackFace != 99) {
+        safeX = rb.x + glm::vec3(0, 0, 0.3f);
+        safeQ = rb.q;
+        safeValid = true;
+    }
 
     auto percentAng = [&](float denom) {
         if (tAngVel == 0) return 1.0f;
@@ -813,6 +839,19 @@ void Game::updateMach5(const Input& in) {
         rb.applyImpulse(diff * (pAccGain * 1.1f) * mass * worldForward);
     } else {
         coast();
+    }
+
+    if (isPlaying && g_cfg.turbo && in.boost) rb.applyImpulse(worldForward * mass * 1.5f * g_cfg.turboPower); // cheat: turbo
+    if (isPlaying && g_cfg.fly) { // cheat: flight
+        if (in.flyUp) {
+            rb.applyImpulse(glm::vec3(0, 0, mass * 2.0f));
+            if (rb.v.z > 28) rb.v.z = 28;
+        }
+        if (powerCoeff == 0) { // in the air the drive pushes along the nose and the stick turns
+            if (fwd && forwardVel < pMaxSpeed) rb.applyImpulse(worldForward * mass * 0.8f);
+            if (in.right) rb.applyAngularImpulse(glm::vec3(0, 0, -mass * 0.6f));
+            else if (in.left) rb.applyAngularImpulse(glm::vec3(0, 0, mass * 0.6f));
+        }
     }
 
     glm::vec3 r = c.rotationDeg();
@@ -1158,7 +1197,7 @@ void Game::updateEnemy(Enemy& e) {
             }
         }
     }
-    if (e.ready && isPlaying) rb.applyImpulse((e.pMaxSpeed - e.forwardVel) * e.pAccGain * mass * worldForward * e.powerCoeff);
+    if (e.ready && isPlaying) rb.applyImpulse((e.pMaxSpeed * g_cfg.rivalSpeed - e.forwardVel) * e.pAccGain * mass * worldForward * e.powerCoeff);
     if (e.powerCoeff == 0) {
         glm::vec3 r = e.rotationDeg();
         if (r.x < -10) rb.applyAngularImpulse(worldRight * mass);
@@ -1438,7 +1477,7 @@ void Game::playFrameScript(const Input& in) {
         if (!p.visible) continue;
         float scale = glm::length(glm::vec3(o.matrix[0]));
         glm::vec3 c = glm::vec3(o.matrix * glm::vec4(o.center, 1));
-        if (glm::distance(c, sawPos) > o.radius * scale + sawRadius) continue;
+        if (glm::distance(c, sawPos) > o.radius * scale + sawRadius + g_cfg.pickupReach) continue;
         p.visible = false;
         const bool sparkTalking = audio::isPlaying(VO, "spark_duggary");
         audio::volume(VO, 255);
