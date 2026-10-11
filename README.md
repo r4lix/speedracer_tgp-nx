@@ -31,7 +31,7 @@ screen. Best score, the bonus wallpaper and solved puzzles are kept in `speedrac
 | ZL | brake / reverse |
 | Left stick or d-pad left/right | steer |
 | A | jacks (jump) |
-| B | belt (grip) tyres |
+| B | belt (grip) tires |
 | Y | cutter blades |
 | R | homing robot |
 | D-pad up | lights |
@@ -62,8 +62,8 @@ More debug switches: `speedracer_jackloop` (with autodrive + hold: tap the throt
 
 Holding Minus for 1.5 seconds opens a Dear ImGui menu over the front end and the race (the game stands still while it is open; L and R change tab). Five tabs:
 **Controls** (D-pad and stick steering, dead zone, invert, throttle always on, and the button for every action),
-**Audio** (mute, master volume), **HUD** (Original (centred 4:3) or Full (against the screen edges),
-the control hint at the start of the race, skip the opening animation, frame-rate and car-stats overlays) and **Cheats** (godmode, infinite oxygen, never fall off, unlimited gadgets, jacks in mid-air and their power, top speed, turbo, fly, gravity, ghost car, rival speed, pickup reach) and **Debug** (autopilot,
+**Audio** (mute, master volume), **HUD** (layout: Original (centred 4:3) or Full screen (against the screen edges),
+controls shown at race start, skip the opening animation, frame-rate and car-stats overlays) and **Cheats** (god mode, infinite oxygen, never fall off, unlimited gadgets, jacks in mid-air and their power, top speed, turbo, fly, gravity, ghost car, rival speed, pickup reach) and **Debug** (autopilot,
 game speed, start at a path point, restart race, per-frame wheel log). Settings are kept in
 `sdmc:/speedracer.cfg`. The touch screen works in the settings menu (finger-sized controls, a **Close** button) and on the
 front-end pages: tap PLAY!, the tabs, the clips, the wallpapers, the mini-game pieces and their buttons, the SOUND switch. Dear ImGui 1.91.5 (MIT) lives in `src/third_party/imgui`.

@@ -50,7 +50,7 @@ const ButtonInfo kButtons[BtnCount] = {
 };
 const char* kActionNames[ActionCount] = {"Drive", "Brake / reverse", "Jacks", "Belt tires", "Cutter blades", "Deflector",
                                          "Illumination", "Frogger mode", "Homing robot", "Help panel", "Turbo (cheat)", "Fly up (cheat)",
-                                         "Open settings (hold)"};
+                                         "Open settings (hold 1.5 s)"};
 const char* kActionKeys[ActionCount] = {"drive", "brake", "jacks", "belt", "cutter", "deflector", "lights", "frogger", "robot", "help", "turbo", "flyup", "menu"};
 
 bool pressAction(int a) { return a != ActDrive && a != ActBrake && a != ActMenu && a != ActBoost && a != ActFlyUp; }

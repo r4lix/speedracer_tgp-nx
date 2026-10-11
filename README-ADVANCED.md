@@ -31,7 +31,7 @@ FreeType. Rendering is OpenGL 4.3 core through switch-mesa.
 `sdmc:/speedracer.cfg` is a plain `key=value` file written by the settings menu (R3). The keys are the fields of
 `struct Settings` in `src/settings.h`: steering (`dpadSteer`, `stickSteer`, `invertSteer`, `stickDeadzone`),
 `autoAccelerate` and one `bind_*` line per action, audio (`mute`, `masterVolume`),
-interface (`hudAnchored`, `showHelp`, `showFps`, `showStats`, `skipIntro`), cheats (`noDamage` = godmode, `infiniteOxygen`, `neverFall`,
+interface (`hudAnchored`, `showHelp`, `showFps`, `showStats`, `skipIntro`), cheats (`noDamage` = god mode, `infiniteOxygen`, `neverFall`,
 `unlimitedGadgets`, `airJacks`, `jackPower`, `topSpeed`, `turbo`, `turboPower`, `fly`, `gravityScale`, `ghostCars`, `rivalSpeed`,
 `pickupReach`) and debug (`autopilot`,
 `timeScale`, `startPath`, `logHover`). Edit it by hand if you prefer.
