@@ -38,7 +38,7 @@ Source: `Havok.x32` (573,440 bytes, sha256 `90694ddbad361fbf...`), one of 12 zli
 
 - Frame order that matches the original: `updateHover` (enterFrame), Havok step, then `updateCar` (exitFrame). With the step last the wheels trail the car by one frame (2 units at full speed).
 - `applyForce` only acts during the first of the 5 substeps (Havok clears the accumulator after each one), which would explain why the script multiplies the drive force by 60 (read from the decompilation, not checked against the running game; with it the car reaches top speed in a few seconds). `applyImpulseAtPoint(J, p)` takes `p` in model space: `r = R * (p - centerOfMass)`.
-- Hover rays use `#maxDistance: 1` although `pHoverDist` is 1.2; the car settles about 0.93 above the road. The spawn ray asks for 2 units but `carPos_Mach5` is 3.6 above the track, so the port casts further.
+- Hover rays use `#maxDistance: 1` although `pHoverDist` is 1.2 (the port now casts pHoverDist, see "Hills" below). The car settles about 0.83 above the road. The spawn ray asks for 2 units but `carPos_Mach5` is 3.6 above the track, so the port casts further.
 - Track surface = mesh index inside each `SEG_nn` model (1..16): 1 finish, 2 brown road, 3 grass, 4 dirt, 5 brown rock, 6 blue road, 7 dark blue road, 8/9 snow, 10 blue dirt, 11 blue rock, 12 underwater sand, 13 blue road variant, 14/15 ice, 16 tree.
 - Shockwave 3D textures are a JPEG followed by an optional alpha plane `{u32 w, u32 h, u32 size, zlib}`; `w3d.py` keeps it glued to the JPEG, `bake.py` splits it (5 textures: car shadow, blades, light beam, icon shadow).
 - Car parts are placed with the collider's transform, ignoring each node's own offset; `scope_door` and `ROBOT` keep a node scale (0.00056, 0.00129). The round thing behind the windshield is the driver's helmet.
@@ -108,3 +108,10 @@ Source: `Havok.x32` (573,440 bytes, sha256 `90694ddbad361fbf...`), one of 12 zli
   limit) instead of coming to rest, where on flat ground it settles within 60 frames.
 - Debug switches added for this: `speedracer_throttle` (autodrive: hold the throttle, no steering), `speedracer_hoverlog` (one line per
   frame with z, vz and each wheel's hover distance), `speedracer_nointro`, `speedracer_result`.
+- Hills, fixed (2026-10-11): with a 1.0 ray the port bounced on slopes, a third of the samples on the first hills (y 700-1330)
+  had fewer than four wheels in contact, and the valley at y 985 (road z about -10.7, cliff test `chassisPos.z <= -10` and no wheel
+  contact) ended the race when the car was airborne for a frame. The original's z(y) there is smooth and its car stays on the
+  road. Casting `pHoverDist` (1.2, which is what the script's `hoverDst < pHoverDist` test implies) removes the partial contacts
+  (33 % -> 0 %) and keeps z(y) within 0.1-0.4 of the original's along the whole stretch. Flat-road ride height is unchanged
+  (z 13.8). The 1.0 value in the script may be an unreachable `#maxDistance`, not a measured one; if some place needs the
+  shorter ray it can be reverted in `Vehicle::hover`.

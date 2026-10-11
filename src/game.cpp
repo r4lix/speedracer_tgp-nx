@@ -94,6 +94,10 @@ glm::vec3 Vehicle::rotationDeg() const {
     return glm::degrees(glm::vec3(x, y, z));
 }
 
+// The script asks modelsUnderRay for #maxDistance 1 yet tests the hit against pHoverDist 1.2, and its car rides on
+// the road without ever losing contact on slopes. With a 1.0 ray the port's wheels let go on every drop (a third of
+// the samples on level 1's first hills, bounce, and at the valley floor y 985 a frame with no contact is the
+// "fell off the track" condition). The ray therefore reaches pHoverDist, which is what the test implies.
 int Vehicle::hover(const Level& level, bool keepDistOnMiss) {
     glm::mat3 rot = body.rotation();
     glm::mat4 xf = body.transform();
@@ -105,7 +109,7 @@ int Vehicle::hover(const Level& level, bool keepDistOnMiss) {
         glm::vec3 wp = glm::vec3(xf * glm::vec4(wheelPoint[i], 1));
         RayHit hit;
         isHovering[i] = false;
-        if (level.collision.raycast(wp, worldDown, 1.0f, true, hit)) {
+        if (level.collision.raycast(wp, worldDown, pHoverDist, true, hit)) {
             if (i == 3) face = hit.surface;
             if (hit.dist < pHoverDist) {
                 glm::vec3 pointVel = linVel + glm::cross(angVel, wp - chassisPos);
@@ -1586,6 +1590,18 @@ void Game::frame(const Input& in) {
     // enterFrame: the player's hover impulses. exitFrame: Havok steps, then the car scripts, then the frame script.
     trackFace = car.hover(level, false);
     physicsStep();
+    {   // diagnostics: is the car under a track surface (it went through the road)?
+        RayHit up;
+        glm::vec3 o = car.body.origin() + glm::vec3(0, 0, 0.3f);
+        if (level.collision.raycast(o, glm::vec3(0, 0, 1), 3.0f, true, up)) {
+            static long lastLogged = -100;
+            if (frameCount - lastLogged > 20) {
+                logf("frame %ld: UNDER THE ROAD at %.1f %.1f %.1f (surface %.2f above), speed %.0f vz %.1f", frameCount, o.x, o.y,
+                     o.z, up.dist, car.forwardVel, car.body.v.z);
+                lastLogged = frameCount;
+            }
+        }
+    }
     updateMach5(in);
     if (screen == Screen::Result) return;
     for (Enemy& e : enemies) {
