@@ -116,6 +116,12 @@ int Vehicle::hover(const Level& level, bool keepDistOnMiss) {
                 glm::vec3 diff = hit.point - wp;
                 float f = -pStrength * (pHoverDist - hit.dist);
                 f -= pDamping * glm::dot(pointVel, diff);
+                // The script multiplies the spring by the distance (|diff|), so it fades out as the car comes down:
+                // below d = 0.37 the four wheels cannot even carry the car's weight and, after a hard landing (the
+                // jacks), it can stay on its hull with the wheels in the road. Below 0.6 the lever stays at 0.6,
+                // the strongest the spring gets, so a compressed car always climbs back to its ride height.
+                const float kMinLever = 0.6f;
+                if (hit.dist < kMinLever && hit.dist > 1e-4f) diff *= kMinLever / hit.dist;
                 body.applyImpulseAtPoint(diff * f * body.mass, wheelPoint[i]);
                 isHovering[i] = true;
                 hoverDist[i] = hit.dist;
@@ -955,7 +961,7 @@ void Game::updateMach5(const Input& in) {
     c.wheelSpin -= forwardVel * c.pWheelSpinCoeff;
     if (c.wheelSpin > 360) c.wheelSpin -= 360;
     else if (c.wheelSpin < -360) c.wheelSpin += 360;
-    c.placeWheels(0.75f);
+    c.placeWheels(0.25f); // the script floors the drop at 0.75, which puts a wheel into the road when the car is low
     shadowVisible = powerCoeff == 1;
 }
 

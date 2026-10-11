@@ -127,3 +127,9 @@ Source: `Havok.x32` (573,440 bytes, sha256 `90694ddbad361fbf...`), one of 12 zli
   ice; at 40 it fell off at y 5885), the bridge/ramp near the end and the finish line at y 10921, logging "finished in place 18
   with 15500 points" and playing the lose cartoon. Not tested: a finish in first place (the win page and the 30000-point bonus
   unlock) because the autopilot is slow, and the race with damage on.
+- Jacks and landing (2026-10-11): the script's spring impulse is `diff * f * mass` with `|diff|` = the hit distance d, so it fades
+  out as the car comes down. Four wheels carry the car's weight only for d > 0.37; below that the car can rest on its hull
+  with the wheels in the road (hull bottom 0.156 under the wheel points). A jack jump (`mass * 40`, 22 frames in the air, 4 units
+  up) landing hard, especially on a downhill, ended in 40 frames of bouncing at d = 0.15-0.25 with the wheel meshes sunk in the road
+  (the script also floors the visual drop at 0.75). Two deliberate deviations: the spring lever is kept at 0.6 below d = 0.6 (no
+  change above, so ride height and hills are untouched), and the wheel meshes use a 0.25 floor instead of 0.75.
