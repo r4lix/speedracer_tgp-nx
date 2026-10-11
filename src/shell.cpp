@@ -1,4 +1,5 @@
 #include "shell.h"
+#include "settings.h"
 
 #include <algorithm>
 #include <cmath>
@@ -26,11 +27,19 @@ enum {
 struct GadgetInfo {
     char key;
     const char* name;
-    const char* button;
+    int action; // the settings binding that fires it
 };
-const GadgetInfo kGadgets[] = {{'a', "AUTO JACKS", "X"}, {'b', "GRIP TIRES", "L"}, {'c', "CUTTER BLADES", "Y"},
-                               {'d', "DEFLECTOR", "MINUS"}, {'e', "ILLUMINATION", "D-PAD UP"},
-                               {'f', "FROGGER MODE", "D-PAD DOWN"}, {'g', "HOMING ROBOT", "R"}};
+const GadgetInfo kGadgets[] = {{'a', "AUTO JACKS", ActJacks}, {'b', "GRIP TIRES", ActGrip}, {'c', "CUTTER BLADES", ActBlades},
+                               {'d', "DEFLECTOR", ActDeflector}, {'e', "ILLUMINATION", ActLights},
+                               {'f', "FROGGER MODE", ActFrogger}, {'g', "HOMING ROBOT", ActRobot}};
+
+// The button an action is bound to, as the pages print it.
+std::string padName(int action) {
+    std::string n = buttonName(g_cfg.bind[action]);
+    for (char& c : n) c = (char)toupper((unsigned char)c);
+    if (n == "UP" || n == "DOWN") n = "D-PAD " + n;
+    return n;
+}
 
 // Episode clips in the order of the page's buttons (MACH 5, GO!, POPS, DECISION, SECRET, GARAGE, GET SET, DUGGERY);
 // the file order is the one the Flash movie lists them in.
@@ -569,6 +578,7 @@ void Shell::frame(const Input& input) {
         }
         break;
     case State::Result:
+        if (frames - resultStart_ < 24) in.confirm = in.cancel = false; // A and B are jacks and belt tires in the race
         if (resultIntro_) {
             if (in.confirm || in.cancel || video_.finished() || !video_.isOpen()) {
                 stopVideo();
@@ -608,7 +618,7 @@ void Shell::drawPage(const char* capture) {
         ui::text("SPEED RACER", 20, 20, 44, kYellow);
         ui::text("DEMON ON WHEELS", 24, 76, 16, kYellow);
     }
-    ui::text(audio::muted() ? "SOUND OFF  ( - )" : "SOUND ON  ( - )", 504, 18, 9, kWhite, 2);
+    ui::text(std::string(audio::muted() ? "SOUND OFF  ( " : "SOUND ON  ( ") + actionLabel(ActDeflector) + " )", 504, 18, 9, kWhite, 2);
 }
 
 void Shell::drawLoadingCard(float alpha, float progress) {
@@ -737,7 +747,7 @@ void Shell::draw(Renderer& renderer, double seconds) {
         if (gadget_) {
             // the original text names the keyboard letter; say which pad button it is
             for (const GadgetInfo& g : kGadgets)
-                if (g.key == gadget_) ui::text(std::string("ON THE PAD: ") + g.button, 30, 366, 10, kYellow);
+                if (g.key == gadget_) ui::text(std::string("ON THE PAD: ") + padName(g.action), 30, 366, 10, kYellow);
         }
         static const char* labels[] = {"A", "B", "C", "D", "E", "F", "G"};
         drawHotspots(cap ? nullptr : labels);
@@ -751,10 +761,13 @@ void Shell::draw(Renderer& renderer, double seconds) {
         // the captured list shows keyboard keys: replace it with the pad
         ui::rect(18, 110, 180, 264, kRed);
         ui::text("CONTROLS", 26, 112, 14, kWhite);
-        static const char* rows[][2] = {{"STICK / D-PAD", "STEER"}, {"A / ZR", "ACCELERATE"}, {"B / ZL", "BRAKE, REVERSE"},
-                                        {"X", "AUTO JACKS"}, {"L", "GRIP TIRES"}, {"Y", "CUTTER BLADES"}, {"MINUS", "DEFLECTOR"},
-                                        {"D-PAD UP", "ILLUMINATION"}, {"D-PAD DOWN", "FROGGER MODE"}, {"R", "HOMING ROBOT"},
-                                        {"PLUS", "QUIT"}};
+        const std::string names[] = {padName(ActDrive),  padName(ActBrake),    padName(ActJacks), padName(ActGrip),
+                                     padName(ActBlades), padName(ActDeflector), padName(ActLights), padName(ActFrogger),
+                                     padName(ActRobot)};
+        const char* rows[][2] = {{"STICK / D-PAD", "STEER"},      {names[0].c_str(), "ACCELERATE"}, {names[1].c_str(), "BRAKE, REVERSE"},
+                                 {names[2].c_str(), "AUTO JACKS"}, {names[3].c_str(), "GRIP TIRES"},  {names[4].c_str(), "CUTTER BLADES"},
+                                 {names[5].c_str(), "DEFLECTOR"},  {names[6].c_str(), "ILLUMINATION"}, {names[7].c_str(), "FROGGER MODE"},
+                                 {names[8].c_str(), "HOMING ROBOT"}, {"PLUS", "QUIT"}};
         for (int i = 0; i < 11; ++i) {
             ui::text(rows[i][0], 26, 138 + 21 * i, 9, kYellow);
             ui::text(rows[i][1], 98, 138 + 21 * i, 9, kWhite);

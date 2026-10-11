@@ -25,6 +25,8 @@ const float kHoldSeconds = 1.5f; // Minus held this long opens and closes the me
 float g_minusTime = 0;       // how long Minus has been down
 bool g_minusFired = false;   // the hold already toggled the menu: its release is not a tap
 bool g_minusTap = false;     // Minus was pressed and released quickly: the game gets a button press
+int g_listen = -1;           // the action waiting for a button press, -1 = none
+bool g_swallow = false;      // a button was just taken for a binding: the menu ignores the pad until it is let go
 bool g_tap = false;          // a finger went down outside the menu, at g_tapX/Y (screen pixels)
 float g_tapX = 0, g_tapY = 0;
 
@@ -65,20 +67,37 @@ void tip(const char* text) {
 void controls() {
     ImGui::SeparatorText("Steering");
     ImGui::Checkbox("D-pad steers", &g_cfg.dpadSteer);
+    ImGui::SameLine();
     ImGui::Checkbox("Left stick steers", &g_cfg.stickSteer);
+    ImGui::SameLine();
+    ImGui::Checkbox("Invert", &g_cfg.invertSteer);
     ImGui::SliderFloat("Stick dead zone", &g_cfg.stickDeadzone, 0.05f, 0.9f, "%.2f");
     tip("How far the stick has to move before the car turns.");
-    ImGui::Checkbox("Invert steering", &g_cfg.invertSteer);
-    ImGui::SeparatorText("Pedals");
-    ImGui::Checkbox("A accelerates", &g_cfg.accelA);
-    ImGui::SameLine();
-    ImGui::Checkbox("ZR accelerates", &g_cfg.accelZR);
-    ImGui::Checkbox("B brakes", &g_cfg.brakeB);
-    ImGui::SameLine();
-    ImGui::Checkbox("ZL brakes", &g_cfg.brakeZL);
     ImGui::Checkbox("Throttle always on", &g_cfg.autoAccelerate);
     tip("The car accelerates without a button. Braking still works.");
-    ImGui::TextDisabled("Gadgets: X jacks  Y blades  L grip  R robot  Up lights  Down frogger  - deflector  L3 help");
+    ImGui::SeparatorText("Buttons");
+    if (g_listen >= 0) ImGui::TextColored(ImVec4(1, 0.85f, 0.15f, 1), "Press the button for \"%s\"   (Plus cancels)", actionName(g_listen));
+    else ImGui::TextDisabled("Choose an action, then press the button you want for it.");
+    if (ImGui::BeginTable("binds", 4, ImGuiTableFlags_SizingStretchProp)) {
+        for (int a = 0; a < ActionCount; ++a) {
+            ImGui::TableNextColumn();
+            ImGui::TextUnformatted(actionName(a));
+            ImGui::TableNextColumn();
+            ImGui::PushID(a);
+            const bool waiting = g_listen == a;
+            if (ImGui::Button(waiting ? "press..." : buttonName(g_cfg.bind[a]), ImVec2(130, 0))) {
+                g_listen = waiting ? -1 : a;
+                g_swallow = false;
+            }
+            ImGui::PopID();
+        }
+        ImGui::EndTable();
+    }
+    if (ImGui::Button("Default buttons")) {
+        resetBindings();
+        g_listen = -1;
+    }
+    tip("ZR drive, ZL brake, A jacks, B belt tires, Y cutter, - deflector, Up lights, Down frogger, R robot, L3 help.");
 }
 
 void audioTab() {
@@ -187,6 +206,23 @@ void feed(uint64_t held, int lx, int ly, double dt) {
     if (!g_ready) return;
     ImGuiIO& io = ImGui::GetIO();
     io.DeltaTime = dt > 1e-4 ? (float)dt : 1.0f / 60;
+    const uint64_t newly = held & ~g_prevHeld;
+    if (g_listen >= 0) { // taking a button for a binding
+        if (newly & HidNpadButton_Plus) {
+            g_listen = -1;
+            g_swallow = true;
+        } else {
+            for (int b = 0; b < BtnNone; ++b) {
+                if (!(newly & buttonMask(b))) continue;
+                assignButton(g_listen, b);
+                g_listen = -1;
+                g_swallow = true;
+                break;
+            }
+        }
+    }
+    if (g_swallow && held == 0) g_swallow = false;
+    if (g_listen >= 0 || g_swallow) held = 0; // ImGui sees nothing while a button is being picked
     // Switch A is the right-hand face button: it goes to ImGui's "activate" (Xbox A, the bottom one).
     padKey(io, ImGuiKey_GamepadFaceDown, held, HidNpadButton_A);
     padKey(io, ImGuiKey_GamepadFaceRight, held, HidNpadButton_B);
@@ -221,9 +257,9 @@ void feed(uint64_t held, int lx, int ly, double dt) {
     }
     uint64_t pressed = held & ~g_prevHeld;
     g_prevHeld = held;
-    // Minus held for a second and a half opens and closes the menu; a quick press is the game's own Minus
-    // (deflector, sound), passed on at the release.
-    if (held & HidNpadButton_Minus) {
+    // The menu button held for a second and a half opens and closes the menu; a quick press is the game's own press
+    // of that button (deflector, sound), passed on at the release.
+    if (held & actionMask(ActMenu)) {
         g_minusTime += (float)dt;
         if (g_minusTime >= kHoldSeconds && !g_minusFired) {
             g_minusFired = true;
@@ -270,7 +306,7 @@ void draw(Shell& shell, double fps) {
         ImGuiWindowFlags hf = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
                               ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoInputs;
         if (ImGui::Begin("##hold", nullptr, hf)) {
-            ImGui::Text("%s", g_open ? "Keep holding - to close the settings" : "Keep holding - for the settings");
+            ImGui::Text("Keep holding %s %s", buttonName(g_cfg.bind[ActMenu]), g_open ? "to close the settings" : "for the settings");
             ImGui::ProgressBar(g_minusTime / kHoldSeconds, ImVec2(360, 14), "");
         }
         ImGui::End();
@@ -279,7 +315,10 @@ void draw(Shell& shell, double fps) {
         ImGui::SetNextWindowSize(ImVec2(900, 640), ImGuiCond_Appearing);
         ImGui::SetNextWindowPos(ImVec2(640, 360), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
         bool open = true;
-        if (ImGui::Begin("Speed Racer - settings   (L / R: tabs   B or hold - : close)", &open, ImGuiWindowFlags_NoCollapse)) {
+        char title[112];
+        snprintf(title, sizeof title, "Speed Racer - settings   (L / R: tabs   B or hold %s: close)###settings",
+                 buttonName(g_cfg.bind[ActMenu]));
+        if (ImGui::Begin(title, &open, ImGuiWindowFlags_NoCollapse)) {
             if (ImGui::BeginTabBar("tabs")) {
                 auto flag = [](int t) { return g_forceTab == t ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None; };
                 if (ImGui::BeginTabItem("Controls", nullptr, flag(0))) {

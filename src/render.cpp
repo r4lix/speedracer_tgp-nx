@@ -649,9 +649,11 @@ void Renderer::draw(Game& g) {
     for (const Overlay& o : g.overlays()) hudQuad(o.texture, o.x + o.anchor * hudEdge(), o.y, o.blend, o.u0, o.u1, o.width);
     setUv();
     if (g.helpBlend > 0 && g_cfg.showHelp) { // the original panel listed keyboard keys; this one lists the pad
-        static const char* rows[][2] = {{"A / ZR", "DRIVE"}, {"B / ZL", "BRAKE"}, {"X", "JACKS"}, {"L", "BELT TIRES"},
-                                        {"Y", "CUTTER BLADES"}, {"-", "DEFLECTOR"}, {"UP", "ILLUMINATION"},
-                                        {"DOWN", "FROGGER MODE"}, {"R", "HOMING ROBOT"}, {"L3", "SHOW/HIDE HELP"}};
+        const char* rows[][2] = {{actionLabel(ActDrive), "DRIVE"},          {actionLabel(ActBrake), "BRAKE"},
+                                 {actionLabel(ActJacks), "JACKS"},          {actionLabel(ActGrip), "BELT TIRES"},
+                                 {actionLabel(ActBlades), "CUTTER BLADES"}, {actionLabel(ActDeflector), "DEFLECTOR"},
+                                 {actionLabel(ActLights), "ILLUMINATION"},  {actionLabel(ActFrogger), "FROGGER MODE"},
+                                 {actionLabel(ActRobot), "HOMING ROBOT"},   {actionLabel(ActHelp), "SHOW/HIDE HELP"}};
         float a = g.helpBlend / 100.0f;
         const float hx = 8 - hudEdge(), hy = 180; // PREP: ovHelp at point(8, 180), against the left edge
         ui::rect(hx, hy, 150, 14 + 13 * 10, glm::vec4(0, 0, 0.1f, 0.6f * a));
@@ -659,7 +661,8 @@ void Renderer::draw(Game& g) {
             ui::text(rows[i][0], hx + 6, hy + 6 + 13 * i, 10, glm::vec4(1, 0.85f, 0.2f, a));
             ui::text(rows[i][1], hx + 50, hy + 6 + 13 * i, 10, glm::vec4(1, 1, 1, a));
         }
-        if (!g.isStarted && g.allReady) ui::text("PRESS A TO START", 256, 112, 16, glm::vec4(1, 1, 1, a), 1);
+        if (!g.isStarted && g.allReady)
+            ui::text(std::string("PRESS ") + actionLabel(ActDrive) + " TO START", 256, 112, 16, glm::vec4(1, 1, 1, a), 1);
     }
     if (g.blackBlend > 0) fullScreen(0, 0, 0, g.blackBlend / 100.0f);
 }

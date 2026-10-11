@@ -248,9 +248,10 @@ int main(int, char**) {
             HidAnalogStickState ls = padGetStickPos(&pad, 0);
             menu::feed(held, ls.x, ls.y, elapsed);
         }
-        // Minus is the menu's hold-to-open button: the game sees it when it is let go early
-        down &= ~(u64)HidNpadButton_Minus;
-        if (menu::takeMinusTap()) down |= HidNpadButton_Minus;
+        // the menu button is hold-to-open: the game sees its press when it is let go early
+        const u64 menuButton = actionMask(ActMenu);
+        down &= ~menuButton;
+        if (menu::takeMinusTap()) down |= menuButton;
         float tapPx = 0, tapPy = 0;
         const bool tapped = menu::takeTap(tapPx, tapPy);
         if (menu::isOpen()) down = 0;
@@ -277,18 +278,17 @@ int main(int, char**) {
             in.left = ((g_cfg.dpadSteer && (held & HidNpadButton_Left)) || (g_cfg.stickSteer && stick.x < -dz));
             in.right = ((g_cfg.dpadSteer && (held & HidNpadButton_Right)) || (g_cfg.stickSteer && stick.x > dz));
             if (g_cfg.invertSteer) std::swap(in.left, in.right);
-            in.forward = ((g_cfg.accelA && (held & HidNpadButton_A)) || (g_cfg.accelZR && (held & HidNpadButton_ZR)) ||
-                          g_cfg.autoAccelerate);
-            in.backward = ((g_cfg.brakeB && (held & HidNpadButton_B)) || (g_cfg.brakeZL && (held & HidNpadButton_ZL)));
+            in.forward = ((held & actionMask(ActDrive)) || g_cfg.autoAccelerate);
+            in.backward = (held & actionMask(ActBrake)) != 0;
             if (in.backward && g_cfg.autoAccelerate) in.forward = false;
-            in.jacks = pressed & HidNpadButton_X;
-            in.blades = pressed & HidNpadButton_Y;
-            in.grip = pressed & HidNpadButton_L;
-            in.robot = pressed & HidNpadButton_R;
-            in.lights = pressed & HidNpadButton_Up;
-            in.frogger = pressed & HidNpadButton_Down;
-            in.deflector = pressed & HidNpadButton_Minus;
-            in.help = pressed & HidNpadButton_StickL;
+            in.jacks = pressed & actionMask(ActJacks);
+            in.blades = pressed & actionMask(ActBlades);
+            in.grip = pressed & actionMask(ActGrip);
+            in.robot = pressed & actionMask(ActRobot);
+            in.lights = pressed & actionMask(ActLights);
+            in.frogger = pressed & actionMask(ActFrogger);
+            in.deflector = pressed & actionMask(ActDeflector);
+            in.help = pressed & actionMask(ActHelp);
             in.confirm = pressed & HidNpadButton_A;
             in.cancel = pressed & HidNpadButton_B;
             in.menu = pressed & HidNpadButton_Plus;

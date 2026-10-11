@@ -30,7 +30,7 @@ FreeType. Rendering is OpenGL 4.3 core through switch-mesa.
 ## Settings file
 `sdmc:/speedracer.cfg` is a plain `key=value` file written by the settings menu (R3). The keys are the fields of
 `struct Settings` in `src/settings.h`: steering (`dpadSteer`, `stickSteer`, `invertSteer`, `stickDeadzone`),
-buttons (`accelA`, `accelZR`, `brakeB`, `brakeZL`, `autoAccelerate`), audio (`mute`, `masterVolume`),
+`autoAccelerate` and one `bind_*` line per action, audio (`mute`, `masterVolume`),
 interface (`hudAnchored`, `showHelp`, `showFps`, `showStats`, `skipIntro`) and debug (`noDamage`, `autopilot`,
 `jackLoop`, `timeScale`, `startPath`, `logHover`). Edit it by hand if you prefer.
 
@@ -71,22 +71,7 @@ The same behaviour is available without files from the settings menu's Debug tab
 - `tools/telemetry/` - reads the original game's physics state from process memory and drives it, to compare
   against the port.
 
-## Controls (full list)
-
-| Button | Action |
-|---|---|
-| A or ZR | accelerate (also starts the race, and restarts from the result screen) |
-| B or ZL | brake / reverse |
-| Left stick or d-pad left/right | steer |
-| X | jacks (jump) |
-| Y | cutter blades |
-| L | belt (grip) tyres |
-| R | homing robot |
-| D-pad up | lights |
-| D-pad down | frogger mode (periscope and canopy) |
-| Minus | deflector |
-| Left stick click | show/hide the help panel |
-| Plus | back to the main page (quit from the main page) |
-| Minus held 1.5 s | settings menu; L / R change tab, B or another long Minus closes (a quick Minus press is the deflector) |
-
+## Controls
+The default buttons are in README.md. In `sdmc:/speedracer.cfg` each action is a `bind_<action>=<button>` line
+(`drive`, `brake`, `jacks`, `belt`, `cutter`, `deflector`, `lights`, `frogger`, `robot`, `help`, `menu`; buttons `A B X Y L R ZL ZR L3 R3 Minus Up Down None`).
 Touch works in the settings menu and on the front-end pages (tap what the page shows); it does not steer the car.

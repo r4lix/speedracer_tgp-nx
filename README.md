@@ -25,21 +25,25 @@ Level 1 is playable from the starting grid to the finish line: 19 opponents (the
 pickups, all seven gadgets, damage, oxygen, score, place, the original HUD and sounds, then a result
 screen. Best score, the bonus wallpaper and solved puzzles are kept in `speedracer.sav` on the SD card.
 
-| Button | Action |
+| Button (default) | Action |
 |---|---|
-| A or ZR | accelerate (also starts the race, and restarts from the result screen) |
-| B or ZL | brake / reverse |
+| ZR | accelerate (also starts the race, and restarts from the result screen) |
+| ZL | brake / reverse |
 | Left stick or d-pad left/right | steer |
-| X | jacks (jump) |
+| A | jacks (jump) |
+| B | belt (grip) tyres |
 | Y | cutter blades |
-| L | belt (grip) tyres |
 | R | homing robot |
 | D-pad up | lights |
 | D-pad down | frogger mode (periscope and canopy) |
-| Minus | deflector |
-| Left stick click | show/hide the help panel |
+| Minus | deflector (sound on/off on the menu pages) |
+| Left stick click (L3) | show/hide the help panel |
 | Plus | back to the main page (quit from the main page) |
-| Minus, held 1.5 seconds | settings menu (Dear ImGui): controls, audio, interface, debug; L and R change tab, B or another long Minus closes. A quick press of Minus is still the deflector (sound on/off on the menu pages) |
+| Minus, held 1.5 seconds | settings menu (Dear ImGui): controls, audio, interface, debug; L and R change tab, B or another long hold closes |
+
+Every one of these buttons except steering and Plus can be changed in the settings menu (Controls tab, **Buttons**), including the button
+that opens the settings. A button belongs to one action: giving it to another swaps them. The menu button may share a
+button with a press action (as Minus does with the deflector): a quick press does the action, a long press opens the menu.
 
 ## Tools
 - `tools/w3d.py` - Shockwave 3D (W3D/IFX) parser and CLOD mesh decoder, exports GLB. Ported from
@@ -57,7 +61,7 @@ More debug switches: `speedracer_jackloop` (with autodrive + hold: tap the throt
 ## Settings menu
 
 Holding Minus for 1.5 seconds opens a Dear ImGui menu over the front end and the race (the game stands still while it is open; L and R change tab). Four tabs:
-**Controls** (D-pad and stick steering, dead zone, invert, which buttons accelerate and brake, throttle always on),
+**Controls** (D-pad and stick steering, dead zone, invert, throttle always on, and the button for every action),
 **Audio** (mute, master volume), **Interface** (HUD against the screen edges or the original's centred 4:3 layout,
 the key list, skip the opening animation, frame-rate and car-stats overlays) and **Debug** (no damage, autopilot,
 jacks on every landing, game speed, start at a path point, restart race, per-frame wheel log). Settings are kept in

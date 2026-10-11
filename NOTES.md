@@ -157,3 +157,7 @@ Source: `Havok.x32` (573,440 bytes, sha256 `90694ddbad361fbf...`), one of 12 zli
   the game at the release. L / R change its tabs. Touch also drives the original pages: a tap selects the hotspot under it and
   presses A (`Shell::touch`), the jigsaw/slider boards, SCRAMBLE / HINT / BACK and the SOUND label take taps too. Racing is
   still pad only.
+- Button mapping (2026-10-11): defaults are ZR drive, ZL brake, A jacks, B belt tires, Y cutter, Minus deflector, Up lights,
+  Down frogger, R robot, L3 help; every one (and the menu's hold button) can be rebound in the Controls tab (`Settings::bind`,
+  `assignButton` swaps when a button is taken). The front end keeps A = choose, B = back, Plus = back. A and B also count as
+  choose/back on the result screen, so those two are ignored for its first 24 frames (jacks mashing must not skip the cartoon).

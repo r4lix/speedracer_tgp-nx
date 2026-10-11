@@ -4,6 +4,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <switch.h>
+
 Settings g_cfg;
 
 namespace {
@@ -18,8 +20,6 @@ struct Entry {
 Entry entries[] = {
     {"dpadSteer", Entry::Bool, &g_cfg.dpadSteer},       {"stickSteer", Entry::Bool, &g_cfg.stickSteer},
     {"invertSteer", Entry::Bool, &g_cfg.invertSteer},   {"stickDeadzone", Entry::Float, &g_cfg.stickDeadzone},
-    {"accelA", Entry::Bool, &g_cfg.accelA},             {"accelZR", Entry::Bool, &g_cfg.accelZR},
-    {"brakeB", Entry::Bool, &g_cfg.brakeB},             {"brakeZL", Entry::Bool, &g_cfg.brakeZL},
     {"autoAccelerate", Entry::Bool, &g_cfg.autoAccelerate}, {"mute", Entry::Bool, &g_cfg.mute},
     {"masterVolume", Entry::Float, &g_cfg.masterVolume}, {"hudAnchored", Entry::Bool, &g_cfg.hudAnchored},
     {"showHelp", Entry::Bool, &g_cfg.showHelp},         {"showFps", Entry::Bool, &g_cfg.showFps},
@@ -28,7 +28,44 @@ Entry entries[] = {
     {"jackLoop", Entry::Bool, &g_cfg.jackLoop},         {"timeScale", Entry::Float, &g_cfg.timeScale},
     {"startPath", Entry::Int, &g_cfg.startPath},        {"logHover", Entry::Bool, &g_cfg.logHover},
 };
+struct ButtonInfo {
+    const char* name;
+    const char* label;
+    uint64_t mask;
+};
+const ButtonInfo kButtons[BtnCount] = {
+    {"A", "A", HidNpadButton_A},        {"B", "B", HidNpadButton_B},          {"X", "X", HidNpadButton_X},
+    {"Y", "Y", HidNpadButton_Y},        {"L", "L", HidNpadButton_L},          {"R", "R", HidNpadButton_R},
+    {"ZL", "ZL", HidNpadButton_ZL},     {"ZR", "ZR", HidNpadButton_ZR},       {"L3", "L3", HidNpadButton_StickL},
+    {"R3", "R3", HidNpadButton_StickR}, {"Minus", "-", HidNpadButton_Minus},  {"Up", "UP", HidNpadButton_Up},
+    {"Down", "DOWN", HidNpadButton_Down}, {"None", "-", 0},
+};
+const char* kActionNames[ActionCount] = {"Drive", "Brake / reverse", "Jacks", "Belt tires", "Cutter blades", "Deflector",
+                                         "Illumination", "Frogger mode", "Homing robot", "Help panel", "Open settings (hold)"};
+const char* kActionKeys[ActionCount] = {"drive", "brake", "jacks", "belt", "cutter", "deflector", "lights", "frogger", "robot", "help", "menu"};
+
+bool pressAction(int a) { return a != ActDrive && a != ActBrake && a != ActMenu; }
 } // namespace
+
+const char* actionName(int action) { return kActionNames[action]; }
+const char* buttonName(int button) { return kButtons[button].name; }
+uint64_t buttonMask(int button) { return button >= 0 && button < BtnCount ? kButtons[button].mask : 0; }
+const char* actionLabel(int action) { return kButtons[g_cfg.bind[action]].label; }
+
+void assignButton(int action, int button) {
+    const int old = g_cfg.bind[action];
+    for (int other = 0; other < ActionCount; ++other) {
+        if (other == action || g_cfg.bind[other] != button || button == BtnNone) continue;
+        const bool share = (action == ActMenu && pressAction(other)) || (other == ActMenu && pressAction(action));
+        if (!share) g_cfg.bind[other] = old;
+    }
+    g_cfg.bind[action] = button;
+}
+
+void resetBindings() {
+    const Settings def;
+    for (int i = 0; i < ActionCount; ++i) g_cfg.bind[i] = def.bind[i];
+}
 
 void loadSettings() {
     FILE* f = fopen(kFile, "r");
@@ -38,6 +75,16 @@ void loadSettings() {
         char* eq = strchr(line, '=');
         if (!eq) continue;
         *eq = 0;
+        if (strncmp(line, "bind_", 5) == 0) { // bind_<action>=<button name>
+            char* v = eq + 1;
+            v[strcspn(v, "\r\n")] = 0;
+            for (int a = 0; a < ActionCount; ++a) {
+                if (strcmp(line + 5, kActionKeys[a]) != 0) continue;
+                for (int b = 0; b < BtnCount; ++b)
+                    if (strcmp(v, kButtons[b].name) == 0) g_cfg.bind[a] = b;
+            }
+            continue;
+        }
         for (Entry& e : entries) {
             if (strcmp(e.key, line) != 0) continue;
             if (e.type == Entry::Bool) *(bool*)e.ptr = atoi(eq + 1) != 0;
@@ -60,5 +107,6 @@ void saveSettings() {
         else if (e.type == Entry::Int) fprintf(f, "%s=%d\n", e.key, *(int*)e.ptr);
         else fprintf(f, "%s=%.3f\n", e.key, *(float*)e.ptr);
     }
+    for (int a = 0; a < ActionCount; ++a) fprintf(f, "bind_%s=%s\n", kActionKeys[a], kButtons[g_cfg.bind[a]].name);
     fclose(f);
 }
