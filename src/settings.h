@@ -42,7 +42,6 @@ struct Settings {
     float pickupReach = 0.0f;      // extra pickup radius in units
     // debug
     bool autopilot = false;
-    bool jackLoop = false;       // jacks again on every landing
     float timeScale = 1.0f;      // game speed, 0.25 .. 2
     int startPath = 0;           // path point (1..209) the next restart begins at, 0 = the grid
     bool logHover = false;       // per-frame wheel numbers into speedracer.log

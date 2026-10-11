@@ -19,6 +19,7 @@ public:
     void draw(Renderer& renderer, double seconds);
     void startRace();
     void goToMainPage();         // from anywhere: stop what is playing and show the main page
+    void shutdown();             // closes the videos while the GL context and the audio mixer still exist
     void startIntro();           // the original's opening animation, if media/intro.flv is there
 
     Game game;

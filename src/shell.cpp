@@ -105,6 +105,12 @@ void Shell::enter(State s) {
     if (s == State::About) gadget_ = 0;
 }
 
+void Shell::shutdown() {
+    video_.close();
+    menuBg_.close();
+    menuVideo_.close();
+}
+
 void Shell::goToMainPage() {
     stopVideo();
     resultIntro_ = false;

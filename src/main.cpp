@@ -237,7 +237,9 @@ int main(int, char**) {
     bool tapPending = false; // a touch waiting for the next game step
     float tapStageX = 0, tapStageY = 0;
 
+    const bool quitTest = fileExists("sdmc:/speedracer_quitafter"); // debug: leave the program by itself after a few seconds
     while (appletMainLoop() && !shell.quit) {
+        if (quitTest && shell.frames > 150) shell.quit = true;
         padUpdate(&pad);
         u64 held = padGetButtons(&pad);
         u64 down = padGetButtonsDown(&pad);
@@ -333,7 +335,6 @@ int main(int, char**) {
             if (racing && fileExists("sdmc:/speedracer_flyup")) in.flyUp = true; // debug: hold the cheats' buttons
             if (racing && fileExists("sdmc:/speedracer_turbo")) in.boost = true;
             if (noDamage || g_cfg.noDamage) game.gDamage = 0;
-            if (g_cfg.jackLoop && racing && game.isPlaying) in.jacks = true;
             if (forceResult >= 0 && racing && game.frameCount == 60) {
                 game.outcome = (Game::Outcome)forceResult;
                 if (game.outcome == Game::Outcome::Win) game.gPosition = 1;
@@ -396,6 +397,7 @@ int main(int, char**) {
         if (++drawn == 1) logf("first frame presented");
     }
 
+    shell.shutdown(); // the videos free their textures and sound stream: before the GL context and the mixer go
     menu::shutdown();
     logf("exiting after %ld front-end frames", shell.frames);
     audio::shutdown();

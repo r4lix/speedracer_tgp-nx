@@ -26,7 +26,7 @@ Entry entries[] = {
     {"showHelp", Entry::Bool, &g_cfg.showHelp},         {"showFps", Entry::Bool, &g_cfg.showFps},
     {"showStats", Entry::Bool, &g_cfg.showStats},       {"skipIntro", Entry::Bool, &g_cfg.skipIntro},
     {"noDamage", Entry::Bool, &g_cfg.noDamage},         {"autopilot", Entry::Bool, &g_cfg.autopilot},
-    {"jackLoop", Entry::Bool, &g_cfg.jackLoop},         {"timeScale", Entry::Float, &g_cfg.timeScale},
+    {"timeScale", Entry::Float, &g_cfg.timeScale},
     {"startPath", Entry::Int, &g_cfg.startPath},        {"logHover", Entry::Bool, &g_cfg.logHover},
     {"infiniteOxygen", Entry::Bool, &g_cfg.infiniteOxygen}, {"neverFall", Entry::Bool, &g_cfg.neverFall},
     {"unlimitedGadgets", Entry::Bool, &g_cfg.unlimitedGadgets}, {"airJacks", Entry::Bool, &g_cfg.airJacks},

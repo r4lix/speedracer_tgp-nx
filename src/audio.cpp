@@ -182,10 +182,14 @@ void mix(int16_t* out) {
     }
 }
 
+int16_t* g_data[2] = {nullptr, nullptr}; // the two output buffers: the audio service reads them until the output is stopped
+
 void threadMain(void*) {
     const size_t bytes = kFrames * 2 * sizeof(int16_t);
     const size_t alloc = (bytes + 0xfff) & ~0xfffu;
-    int16_t* data[2] = {(int16_t*)memalign(0x1000, alloc), (int16_t*)memalign(0x1000, alloc)};
+    g_data[0] = (int16_t*)memalign(0x1000, alloc);
+    g_data[1] = (int16_t*)memalign(0x1000, alloc);
+    int16_t** data = g_data;
     AudioOutBuffer buf[2];
     for (int i = 0; i < 2; ++i) {
         memset(data[i], 0, alloc);
@@ -203,8 +207,6 @@ void threadMain(void*) {
         mix((int16_t*)released->buffer);
         audoutAppendAudioOutBuffer(released);
     }
-    free(data[0]);
-    free(data[1]);
 }
 
 } // namespace
@@ -231,6 +233,9 @@ void shutdown() {
     threadClose(&g_thread);
     audoutStopAudioOut();
     audoutExit();
+    free(g_data[0]); // only now: the service no longer reads them
+    free(g_data[1]);
+    g_data[0] = g_data[1] = nullptr;
     g_ok = false;
 }
 

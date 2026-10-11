@@ -31,10 +31,10 @@ FreeType. Rendering is OpenGL 4.3 core through switch-mesa.
 `sdmc:/speedracer.cfg` is a plain `key=value` file written by the settings menu (R3). The keys are the fields of
 `struct Settings` in `src/settings.h`: steering (`dpadSteer`, `stickSteer`, `invertSteer`, `stickDeadzone`),
 `autoAccelerate` and one `bind_*` line per action, audio (`mute`, `masterVolume`),
-interface (`hudAnchored`, `showHelp`, `showFps`, `showStats`, `skipIntro`), cheats (`noDamage`, `infiniteOxygen`, `neverFall`,
+interface (`hudAnchored`, `showHelp`, `showFps`, `showStats`, `skipIntro`), cheats (`noDamage` = godmode, `infiniteOxygen`, `neverFall`,
 `unlimitedGadgets`, `airJacks`, `jackPower`, `topSpeed`, `turbo`, `turboPower`, `fly`, `gravityScale`, `ghostCars`, `rivalSpeed`,
 `pickupReach`) and debug (`autopilot`,
-`jackLoop`, `timeScale`, `startPath`, `logHover`). Edit it by hand if you prefer.
+`timeScale`, `startPath`, `logHover`). Edit it by hand if you prefer.
 
 ## Debug switches
 Empty files on the SD card root that `src/main.cpp` looks for at start-up (the race log goes to
@@ -56,7 +56,7 @@ Empty files on the SD card root that `src/main.cpp` looks for at start-up (the r
 | `speedracer_hoverlog` | logs position, speed and wheel state for every frame |
 | `speedracer_startpath` | contains a path point number to start the race from |
 | `speedracer_result` | contains a result to show on the result screen |
-| `speedracer_menu` | contains a tab number (0 controls .. 3 cheats, 4 debug): open the settings menu on that tab |
+| `speedracer_menu` | contains a tab number (0 controls, 1 audio, 2 HUD, 3 cheats, 4 debug): open the settings menu on that tab |
 
 The same behaviour is available without files from the settings menu's Debug tab.
 
