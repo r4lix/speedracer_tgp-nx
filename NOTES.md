@@ -122,3 +122,8 @@ Source: `Havok.x32` (573,440 bytes, sha256 `90694ddbad361fbf...`), one of 12 zli
   descent in the second) stayed at 38-53 u/s, which may be lost to its constant steering corrections or may be a real difference in
   how speed builds up on a descent. Unresolved; `orig-drive.py` now follows the path polyline with a speed-dependent lookahead and
   gets through the climb and the descent (to y 2100) reliably.
+- Full lap (2026-10-11): the autopilot drives start to finish with `speedracer_autodrive` + `speedracer_nodamage` in about 8420
+  frames (4 minutes of game time): through the first hills, the ice hairpins at y 5800-6000 (it now keeps to 24-32 u/s on snow and
+  ice; at 40 it fell off at y 5885), the bridge/ramp near the end and the finish line at y 10921, logging "finished in place 18
+  with 15500 points" and playing the lose cartoon. Not tested: a finish in first place (the win page and the 30000-point bonus
+  unlock) because the autopilot is slow, and the race with damage on.

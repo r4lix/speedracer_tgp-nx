@@ -79,7 +79,7 @@ Debug aids, as empty files on the SD card root: `speedracer_autodrive` (the car 
 points by itself), `speedracer_nodamage`, `speedracer_gadgets` (fires each gadget on a schedule), `speedracer_menudemo` (walks through the menus),
 `speedracer_hold` (with autodrive: wait on the start line, for comparing against the original),
 `speedracer_nointro` (skip the opening animation),
-`speedracer_throttle` (with autodrive: hold the throttle, no steering), `speedracer_hoverlog` (per-frame hover numbers),
+`speedracer_throttle` (with autodrive: hold the throttle, no steering), `speedracer_straight` (with autodrive: steer to y 1500, then hands off), `speedracer_hoverlog` (per-frame hover numbers),
 `speedracer_result` containing 1, 2 or 3 (with autodrive: end the race after two seconds as won, lost or wrecked),
 and `speedracer_startpath` containing a path point number (1..209) to start from.
 The game writes `speedracer.log` there.

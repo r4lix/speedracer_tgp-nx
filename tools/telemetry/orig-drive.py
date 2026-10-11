@@ -148,6 +148,23 @@ def main():
             if want_throttle != throttle:
                 key("Up", want_throttle)
                 throttle = want_throttle
+        if os.environ.get("STRAIGHT") and y >= 1500:
+            # hands off the steering from the top of the descent, throttle held down
+            for k in ("Left", "Right"):
+                key(k, False)
+            key("Up", True)
+            steer = None
+            while True:
+                t = time.perf_counter() - t0
+                v = read(addr)
+                if v is None or t > seconds:
+                    break
+                f.write("%.3f,%.2f,%.2f,%.3f" % (t, v[0], v[1], v[2]) + chr(10))
+                hist.append((t, v[0], v[1], v[2]))
+                if len(hist) > 40 and math.hypot(v[0] - hist[-40][1], v[1] - hist[-40][2]) < 3:
+                    break
+                time.sleep(0.02)
+            break
         if t > 4 and len(hist) > 60 and math.hypot(x - hist[-60][1], y - hist[-60][2]) < 4:
             print("stuck at", x, y)
             break

@@ -116,7 +116,10 @@ static void autoPilot(const Game& g, Input& in) {
     // Snow and ice: put the grip tyres on, and take it slower.
     const bool slippery = g.trackFace == 8 || g.trackFace == 9 || g.trackFace == 14 || g.trackFace == 15;
     in.grip = slippery && !g.pHasGrip;
-    if (slippery && speed > 40) in.forward = false;
+    if (slippery) {
+        if (speed > 24) in.forward = false;
+        in.backward = speed > 32;
+    }
     // Nose against a tree or a wall: back out for a second and a half.
     static int slow = 0, reversing = 0;
     slow = g.isPlaying && std::fabs(speed) < 3 ? slow + 1 : 0;
@@ -265,6 +268,16 @@ int main(int, char**) {
             if (autoDrive && racing) {
                 if (holdStart) in = Input{};
                 else if (fileExists("sdmc:/speedracer_throttle")) { in = Input{}; in.forward = true; } // straight ahead, flat out
+                else if (fileExists("sdmc:/speedracer_straight")) {
+                    // steer along the path at 50 u/s up to y 1500 (the top of the long descent), then hands off, throttle down
+                    if (game.car.body.origin().y < 1500) {
+                        autoPilot(game, in);
+                        if (game.car.forwardVel > 50) in.forward = false;
+                    } else {
+                        in = Input{};
+                        in.forward = true;
+                    }
+                }
                 else autoPilot(game, in);
                 in.confirm = false;
             }
