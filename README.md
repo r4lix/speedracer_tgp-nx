@@ -1,4 +1,4 @@
-# Speed Racer: The Great Plan - revival
+# Speed Racer: The Great Plan running natively on the Nintendo Switch
 
 Goal: native reimplementation (PC first, then Nintendo Switch via nxvk) of the 2005
 Iron Monkey / Blit Interactive game. **Bring your own copy**: this repo contains only our code.
@@ -39,54 +39,6 @@ screen. Best score, the bonus wallpaper and solved puzzles are kept in `speedrac
 | Minus | deflector |
 | Left stick click | show/hide the help panel |
 | Plus | back to the main page (quit from the main page) |
-
-The front end follows the original main movie: the RACE!, VIDEO CLIPS, WALLPAPER and MINIGAMES tabs,
-ABOUT THE MACH 5 (the seven steering-wheel buttons, a turning 3D car and each gadget's demo video) and
-HOW TO PLAY. The original pages were Flash; here each page is drawn over a screen capture of the
-original (`local/ref/*.png`, see below) with live parts on top: videos, the 3D car, the selection frame,
-pad controls. In menus: d-pad or stick moves, A selects, B goes back, Minus mutes.
-
-Differences from the original menu:
-- Wallpapers are shown full screen instead of being set as a desktop background. The third one
-  (Duggery) unlocks as in the original: win with 30000 points.
-- Mini-games are rebuilt for a pad. Sliders is the same 4x4 sliding puzzle. Jigsaw is a swap puzzle
-  on a 6x5 grid of square pieces, not free-form pieces dragged with a mouse. Solving one plays a
-  related episode clip; the original revealed a video inside the puzzle.
-- No high-score submission, buy button or print controls (the web services are gone); QUIT takes
-  the print button's place.
-- Result screens use captures of the original WIN and LOSE pages (the original shows the same page
-  for losing and for wrecking the car). The lose page opens on a still of the original's cartoon
-  panel instead of the animation with its sound; the win page's opening animation was not captured.
-- Which episode clip sits behind which button is taken from the order of the file names in the
-  Flash movie and may be off.
-
-To make the page captures, run the original once on the PC and click through its pages
-(`switch/tools/run-original.py` starts it on current Windows, see NOTES.md), saving each page as
-`local/ref/t_main.png`, `t_clips`, `t_wall`, `t_mini`, `t_about`, `t_how`, `a_A`..`a_G`, and the
-result pages `r_win`, `r_lose`, `r_die_anim`.
-Without them the pages fall back to plain text labels.
-
-The opening animation (`media/intro.flv`, A or B skips it) is built the same way as the result cartoons:
-the intro movie is `XMED-4412` of the movie inside the projector exe (`tools/swfcapture`
-renders its frames, `tools/introvideo.py` mixes its sounds); the Switch icon is the last frame of it.
-
-The cartoons that open the result screens are optional too. To build them: `python tools/swfstrip.py` the
-LOSE and DIE movies, render every movie's frames with the capture page in `tools/swfcapture`
-(see `tools/cutscene.py`), run `python tools/cutscene.py`, then bake again. Without them the result
-screen shows a still panel.
-
-Debug aids, as empty files on the SD card root: `speedracer_autodrive` (the car follows the path
-points by itself), `speedracer_nodamage`, `speedracer_gadgets` (fires each gadget on a schedule), `speedracer_menudemo` (walks through the menus),
-`speedracer_hold` (with autodrive: wait on the start line, for comparing against the original),
-`speedracer_nointro` (skip the opening animation),
-`speedracer_throttle` (with autodrive: hold the throttle, no steering), `speedracer_straight` (with autodrive: steer to y 1500, then hands off), `speedracer_hoverlog` (per-frame hover numbers),
-`speedracer_result` containing 1, 2 or 3 (with autodrive: end the race after two seconds as won, lost or wrecked),
-and `speedracer_startpath` containing a path point number (1..209) to start from.
-The game writes `speedracer.log` there.
-
-Code: `src/game.cpp` is the port of the level's Lingo (PREP, PLAY, doMach5, doEnemy, handlePickups,
-doCamera, HUD scripts), `src/physics.cpp` stands in for Havok, `src/render.cpp` draws, `src/audio.cpp`
-mixes the eight sound channels, `src/shell.cpp` is the front end, `src/video.cpp` plays the FLV clips.
 
 ## Tools
 - `tools/w3d.py` - Shockwave 3D (W3D/IFX) parser and CLOD mesh decoder, exports GLB. Ported from
